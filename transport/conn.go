@@ -66,7 +66,7 @@ func (c *connWriter) loop() {
 		// If there are no requests backoff.
 		// Through experimentation, we know that, sleeping more than 1ms makes no difference or is counterproductive.
 		if size == 0 {
-			time.Sleep(time.Millisecond)
+			// time.Sleep(time.Millisecond)
 			size = len(c.requestCh)
 		}
 		if size == 0 {
