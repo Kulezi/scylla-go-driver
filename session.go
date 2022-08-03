@@ -66,17 +66,17 @@ var (
 )
 
 type SessionConfig struct {
-	Hosts  []string
-	Events []EventType
-	Policy transport.HostSelectionPolicy
+	Hosts               []string
+	Events              []EventType
+	HostSelectionPolicy transport.HostSelectionPolicy
 	transport.ConnConfig
 }
 
 func DefaultSessionConfig(keyspace string, hosts ...string) SessionConfig {
 	return SessionConfig{
-		Hosts:      hosts,
-		Policy:     transport.NewTokenAwarePolicy(""),
-		ConnConfig: transport.DefaultConnConfig(keyspace),
+		Hosts:               hosts,
+		HostSelectionPolicy: transport.NewTokenAwarePolicy(""),
+		ConnConfig:          transport.DefaultConnConfig(keyspace),
 	}
 }
 
@@ -112,7 +112,6 @@ func (cfg *SessionConfig) Validate() error {
 type Session struct {
 	cfg     SessionConfig
 	cluster *transport.Cluster
-	policy  transport.HostSelectionPolicy
 }
 
 func NewSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
@@ -122,7 +121,7 @@ func NewSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
 		return nil, err
 	}
 
-	cluster, err := transport.NewCluster(ctx, cfg.ConnConfig, cfg.Policy, cfg.Events, cfg.Hosts...)
+	cluster, err := transport.NewCluster(ctx, cfg.ConnConfig, cfg.HostSelectionPolicy, cfg.Events, cfg.Hosts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +129,6 @@ func NewSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
 	s := &Session{
 		cfg:     cfg,
 		cluster: cluster,
-		policy:  cfg.Policy,
 	}
 
 	return s, nil
