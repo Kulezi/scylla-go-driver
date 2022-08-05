@@ -69,6 +69,7 @@ type SessionConfig struct {
 	Hosts               []string
 	Events              []EventType
 	HostSelectionPolicy transport.HostSelectionPolicy
+	RetryPolicy         transport.RetryPolicy
 	transport.ConnConfig
 }
 
@@ -76,6 +77,7 @@ func DefaultSessionConfig(keyspace string, hosts ...string) SessionConfig {
 	return SessionConfig{
 		Hosts:               hosts,
 		HostSelectionPolicy: transport.NewTokenAwarePolicy(""),
+		RetryPolicy:         transport.NewDefaultRetryPolicy(),
 		ConnConfig:          transport.DefaultConnConfig(keyspace),
 	}
 }
