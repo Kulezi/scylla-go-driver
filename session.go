@@ -72,16 +72,20 @@ type SessionConfig struct {
 	Policy transport.HostSelectionPolicy
 
 	SchemaAgreementInterval time.Duration
+	// Controls the timeout for the automatic wait for schema agreement after sending a schema-altering statement.
+	// If less or equal to 0, the automatic schema agreement is disabled.
+	AutoAwaitSchemaAgreementTimeout time.Duration
 
 	transport.ConnConfig
 }
 
 func DefaultSessionConfig(keyspace string, hosts ...string) SessionConfig {
 	return SessionConfig{
-		Hosts:                   hosts,
-		Policy:                  transport.NewTokenAwarePolicy(""),
-		ConnConfig:              transport.DefaultConnConfig(keyspace),
-		SchemaAgreementInterval: 200 * time.Millisecond,
+		Hosts:                           hosts,
+		Policy:                          transport.NewTokenAwarePolicy(""),
+		ConnConfig:                      transport.DefaultConnConfig(keyspace),
+		SchemaAgreementInterval:         200 * time.Millisecond,
+		AutoAwaitSchemaAgreementTimeout: 60 * time.Second,
 	}
 }
 
@@ -202,6 +206,42 @@ func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
 		}
 		<-ticker.C
 	}
+}
+
+func (s *Session) AwaitTimedSchemaAgreement(ctx context.Context, timeout time.Duration) (bool, error) {
+	ticker := time.NewTicker(s.cfg.SchemaAgreementInterval)
+	timer := time.NewTimer(timeout)
+	defer ticker.Stop()
+	for {
+		agreement, err := s.CheckSchemaAgreement(ctx)
+		if err != nil {
+			return false, err
+		}
+		if agreement {
+			return true, nil
+		}
+
+		select {
+		case <-ticker.C:
+			continue
+		case <-timer.C:
+			return false, fmt.Errorf("schema not in agreement after %v", timeout)
+		}
+	}
+}
+
+func (s *Session) handleAutoAwaitSchemaAgreement(ctx context.Context, stmt string, result *transport.QueryResult) error {
+	if s.cfg.AutoAwaitSchemaAgreementTimeout <= 0 {
+		return nil
+	}
+
+	if result.SchemaChange != nil {
+		if _, err := s.AwaitTimedSchemaAgreement(ctx, s.cfg.AutoAwaitSchemaAgreementTimeout); err != nil {
+			return fmt.Errorf("failed to reach schema agreement after a schema-altering statement: %v, %w", stmt, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *Session) CheckSchemaAgreement(ctx context.Context) (bool, error) {
