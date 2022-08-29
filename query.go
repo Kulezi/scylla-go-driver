@@ -254,10 +254,13 @@ func (q *Query) Idempotent() bool {
 type Result transport.QueryResult
 
 func (q *Query) Iter(ctx context.Context) Iter {
+	stmt := q.stmt.Clone()
 	it := Iter{
 		requestCh: make(chan struct{}, 1),
 		nextCh:    make(chan transport.QueryResult),
 		errCh:     make(chan error, 1),
+
+		meta: *stmt.Metadata,
 	}
 
 	info, err := q.info()
@@ -267,8 +270,7 @@ func (q *Query) Iter(ctx context.Context) Iter {
 	}
 
 	worker := iterWorker{
-		stmt: q.stmt.Clone(),
-
+		stmt:      stmt,
 		rd:        q.session.cfg.RetryPolicy.NewRetryDecider(),
 		queryInfo: info,
 		pickNode:  q.session.cfg.HostSelectionPolicy.Node,
@@ -293,6 +295,8 @@ type Iter struct {
 	nextCh    chan transport.QueryResult
 	errCh     chan error
 	closed    bool
+
+	meta frame.ResultMetadata
 }
 
 var (
@@ -335,6 +339,10 @@ func (it *Iter) Close() {
 	}
 	it.closed = true
 	close(it.requestCh)
+}
+
+func (it *Iter) Columns() []frame.ColumnSpec {
+	return it.meta.Columns
 }
 
 type iterWorker struct {

@@ -114,7 +114,7 @@ func (q *Query) Idempotent(value bool) *Query {
 	// q.query.SetIdempotent(value)
 }
 
-func (q *Query) SerialConsistency(cons gocql.SerialConsistency) *Queryx {
+func (q *Query) SerialConsistency(cons gocql.SerialConsistency) *Query {
 	panic("unimplemented")
 }
 
