@@ -1,6 +1,7 @@
 package gocql
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -68,3 +69,5 @@ func (o *optionWrap) NewWithError() (interface{}, error) {
 	typ := goType(o)
 	return reflect.New(typ).Interface(), nil
 }
+
+var ErrNotFound = errors.New("not found")
