@@ -22,7 +22,7 @@ type Query struct {
 
 func (q *Query) Exec(ctx context.Context) (Result, error) {
 	if q.err != nil {
-		return Result{}, fmt.Errorf("query can't be executed: %w", q.err)
+		return Result{}, fmt.Errorf("query can't be executed: %v", q.err)
 	}
 	conn, err := q.pickConn()
 	if err != nil {
@@ -211,7 +211,7 @@ func (q *Query) Iter(ctx context.Context) Iter {
 		nextCh:    make(chan transport.QueryResult),
 		errCh:     make(chan error, 1),
 
-		meta: *stmt.Metadata,
+		meta: stmt.Metadata,
 	}
 
 	conn, err := q.pickConn()
@@ -244,7 +244,7 @@ type Iter struct {
 	errCh     chan error
 	closed    bool
 
-	meta frame.ResultMetadata
+	meta *frame.ResultMetadata
 	err  error
 }
 
@@ -252,6 +252,26 @@ var (
 	ErrClosedIter = fmt.Errorf("iter is closed")
 	ErrNoMoreRows = fmt.Errorf("no more rows left")
 )
+
+func (it *Iter) Scan(dst ...interface{}) bool {
+	row, err := it.Next()
+	if err != nil {
+		return false
+	}
+
+	if it.meta == nil || len(it.meta.Columns) != len(row) {
+		it.err = fmt.Errorf("column count mismatch, expected %d, got %d", len(it.meta.Columns), len(row))
+	}
+
+	for i := range row {
+		if err := gocql.Unmarshal(&it.meta.Columns[i].Type, row[i].Value, dst[i]); err != nil {
+			it.err = err
+			return false
+		}
+	}
+
+	return true
+}
 
 func (it *Iter) Next() (frame.Row, error) {
 	if it.closed {
