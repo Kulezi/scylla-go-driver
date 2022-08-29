@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gocql/gocql"
 	"github.com/scylladb/scylla-go-driver/frame"
 	"github.com/scylladb/scylla-go-driver/transport"
 )
@@ -15,9 +16,14 @@ type Query struct {
 	exec      func(context.Context, *transport.Conn, transport.Statement, frame.Bytes) (transport.QueryResult, error)
 	asyncExec func(context.Context, *transport.Conn, transport.Statement, frame.Bytes, transport.ResponseHandler)
 	res       []transport.ResponseHandler
+
+	err []error
 }
 
 func (q *Query) Exec(ctx context.Context) (Result, error) {
+	if q.err != nil {
+		return Result{}, fmt.Errorf("query can't be executed: %w", q.err)
+	}
 	conn, err := q.pickConn()
 	if err != nil {
 		return Result{}, err
@@ -110,6 +116,55 @@ func (q *Query) info(token transport.Token, tokenAware bool) (transport.QueryInf
 	}
 
 	return q.session.cluster.NewQueryInfo(), nil
+}
+
+func (q *Query) checkBounds(pos int) error {
+	if q.stmt.Metadata != nil {
+		if pos < 0 || pos >= len(q.stmt.Values) {
+			return fmt.Errorf("no bind marker with position %d", pos)
+		}
+
+		return nil
+	}
+
+	for i := len(q.stmt.Values); i <= pos; i++ {
+		q.stmt.Values = append(q.stmt.Values, frame.Value{})
+	}
+	return nil
+}
+
+// BindAny allows binding any value to the bind marker at given pos in query,
+// it shouldn't be used on non-prepared queries, as it will always result in query execution error later.
+func (q *Query) BindAny(pos int, x any) *Query {
+	if q.stmt.Metadata == nil {
+		q.err = append(q.err, fmt.Errorf("binding any to unprepared queries is not supported"))
+		return q
+	}
+	if err := q.checkBounds(pos); err != nil {
+		q.err = append(q.err, err)
+		return q
+	}
+
+	var err error
+
+	typ := q.stmt.Values[pos].Type
+	if typ.ID == frame.ListID {
+		typ := gocql.CollectionType{
+			NativeType: gocql.NewNativeType(0x04, typ.Type(), ""),
+			Elem:       &q.stmt.Values[pos].Type.List.Element,
+		}
+		q.stmt.Values[pos].Bytes, err = gocql.Marshal(typ, x)
+	} else {
+		q.stmt.Values[pos].Bytes, err = gocql.Marshal(q.stmt.Values[pos].Type, x)
+	}
+
+	if err != nil {
+		q.err = append(q.err, err)
+		return q
+	}
+	q.stmt.Values[pos].N = int32(len(q.stmt.Values[pos].Bytes))
+
+	return q
 }
 
 func (q *Query) BindInt64(pos int, v int64) *Query {
