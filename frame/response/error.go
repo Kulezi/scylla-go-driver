@@ -3,7 +3,7 @@ package response
 import (
 	"fmt"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 // ScyllaError is embedded in all error frames.

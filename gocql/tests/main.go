@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kulezi/scylla-go-driver/gocql"
 	"github.com/pkg/profile"
-	"github.com/scylladb/scylla-go-driver/gocql"
 )
 
 const insertStmt = "INSERT INTO benchks.benchtab (pk, v1, v2) VALUES(?, ?, ?)"

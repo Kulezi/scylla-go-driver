@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 
 	"github.com/google/go-cmp/cmp"
 )

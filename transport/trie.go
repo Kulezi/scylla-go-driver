@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 type trie struct {
