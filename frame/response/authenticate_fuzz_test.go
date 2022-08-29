@@ -3,7 +3,7 @@ package response
 import (
 	"testing"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 var dummyA *Authenticate

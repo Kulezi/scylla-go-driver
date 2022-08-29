@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scylladb/scylla-go-driver/frame"
-	. "github.com/scylladb/scylla-go-driver/frame/response"
+	"github.com/kulezi/scylla-go-driver/frame"
+	. "github.com/kulezi/scylla-go-driver/frame/response"
 
 	"go.uber.org/atomic"
 )
