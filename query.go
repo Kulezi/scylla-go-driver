@@ -205,10 +205,13 @@ func (q *Query) Compression() bool {
 type Result transport.QueryResult
 
 func (q *Query) Iter(ctx context.Context) Iter {
+	stmt := q.stmt.Clone()
 	it := Iter{
 		requestCh: make(chan struct{}, 1),
 		nextCh:    make(chan transport.QueryResult),
 		errCh:     make(chan error, 1),
+
+		meta: *stmt.Metadata,
 	}
 
 	conn, err := q.pickConn()
@@ -218,7 +221,7 @@ func (q *Query) Iter(ctx context.Context) Iter {
 	}
 
 	worker := iterWorker{
-		stmt:      q.stmt.Clone(),
+		stmt:      stmt,
 		conn:      conn,
 		queryExec: q.exec,
 		requestCh: it.requestCh,
@@ -240,6 +243,8 @@ type Iter struct {
 	nextCh    chan transport.QueryResult
 	errCh     chan error
 	closed    bool
+
+	meta frame.ResultMetadata
 }
 
 var (
@@ -282,6 +287,10 @@ func (it *Iter) Close() {
 	}
 	it.closed = true
 	close(it.requestCh)
+}
+
+func (it *Iter) Columns() []frame.ColumnSpec {
+	return it.meta.Columns
 }
 
 type iterWorker struct {

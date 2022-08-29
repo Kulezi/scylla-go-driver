@@ -1,5 +1,11 @@
 package gocql
 
+import (
+	"reflect"
+
+	"github.com/kulezi/scylla-go-driver/frame"
+)
+
 type unsetColumn struct{}
 
 // UnsetValue represents a value used in a query binding that will be ignored by Cassandra.
@@ -32,3 +38,33 @@ type SpeculativeExecutionPolicy interface{}
 type SerialConsistency interface{}
 type QueryObserver interface{}
 type Tracer interface{}
+
+type ColumnInfo struct {
+	Keyspace string
+	Table    string
+	Name     string
+	TypeInfo TypeInfo
+}
+
+type optionWrap frame.Option
+
+func (o *optionWrap) Type() Type {
+	return Type(o.ID)
+}
+
+func (o *optionWrap) Version() byte {
+	return frame.CQLv4
+}
+
+func (o *optionWrap) Custom() string {
+	return ""
+}
+
+func (o *optionWrap) New() interface{} {
+	return nil
+}
+
+func (o *optionWrap) NewWithError() (interface{}, error) {
+	typ := goType(o)
+	return reflect.New(typ).Interface(), nil
+}
