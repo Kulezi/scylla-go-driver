@@ -26,3 +26,9 @@ type Duration struct {
 	Days        int32
 	Nanoseconds int64
 }
+
+type RetryPolicy interface{} // TODO: use retry policy
+type SpeculativeExecutionPolicy interface{}
+type SerialConsistency interface{}
+type QueryObserver interface{}
+type Tracer interface{}
