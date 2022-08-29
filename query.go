@@ -297,6 +297,7 @@ type Iter struct {
 	closed    bool
 
 	meta frame.ResultMetadata
+	err  error
 }
 
 var (
@@ -314,8 +315,8 @@ func (it *Iter) Next() (frame.Row, error) {
 		case r := <-it.nextCh:
 			it.result = r
 		case err := <-it.errCh:
-			it.Close()
-			return nil, err
+			it.err = err
+			return nil, it.Close()
 		}
 
 		it.pos = 0
@@ -333,16 +334,21 @@ func (it *Iter) Next() (frame.Row, error) {
 	return res, nil
 }
 
-func (it *Iter) Close() {
+func (it *Iter) Close() error {
 	if it.closed {
-		return
+		return it.err
 	}
 	it.closed = true
 	close(it.requestCh)
+	return it.err
 }
 
 func (it *Iter) Columns() []frame.ColumnSpec {
 	return it.meta.Columns
+}
+
+func (it *Iter) NumRows() int {
+	return it.rowCnt
 }
 
 type iterWorker struct {

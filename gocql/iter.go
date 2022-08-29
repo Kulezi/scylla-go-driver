@@ -21,3 +21,7 @@ func (it *Iter) Columns() []ColumnInfo {
 
 	return cols
 }
+
+func (it *Iter) NumRows() int {
+	return it.it.NumRows()
+}
