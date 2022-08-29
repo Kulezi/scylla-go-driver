@@ -25,3 +25,11 @@ func (it *Iter) Columns() []ColumnInfo {
 func (it *Iter) NumRows() int {
 	return it.it.NumRows()
 }
+
+func (it *Iter) Close() error {
+	return it.it.Close()
+}
+
+func (it *Iter) Scan(dest ...interface{}) bool {
+	return it.it.Scan(dest...)
+}
