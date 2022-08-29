@@ -31,6 +31,7 @@ func (s *Session) Query(stmt string, values ...interface{}) *Query {
 	}
 
 	return &Query{
+		ctx:   context.Background(),
 		query: q,
 		err:   err,
 	}
