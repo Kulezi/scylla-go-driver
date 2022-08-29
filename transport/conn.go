@@ -636,6 +636,9 @@ func (c *Conn) Prepare(ctx context.Context, s Statement) (Statement, error) {
 		s.PkIndexes = v.Metadata.PkIndexes
 		s.PkCnt = v.Metadata.PkCnt
 		s.Metadata = &v.ResultMetadata
+		for i := range s.Values {
+			s.Values[i].Type = &v.Metadata.Columns[i].Type
+		}
 		return s, nil
 	}
 
