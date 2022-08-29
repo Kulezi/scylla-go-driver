@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/scylladb/scylla-go-driver/frame"
-	"github.com/scylladb/scylla-go-driver/transport"
+	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 // TODO: Add retry policy.

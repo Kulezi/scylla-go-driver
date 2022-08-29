@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/klauspost/compress/s2"
+	"github.com/kulezi/scylla-go-driver/frame"
 	"github.com/pierrec/lz4/v4"
-	"github.com/scylladb/scylla-go-driver/frame"
 )
 
 type comprData struct {

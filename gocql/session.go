@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	scylla "github.com/scylladb/scylla-go-driver"
+	scylla "github.com/kulezi/scylla-go-driver"
 )
 
 type Consistency = scylla.Consistency

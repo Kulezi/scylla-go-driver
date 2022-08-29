@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/gocql/gocql"
-	"github.com/scylladb/scylla-go-driver/frame"
-	"github.com/scylladb/scylla-go-driver/transport"
+	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 type Query struct {
@@ -128,7 +128,7 @@ func (q *Query) Fetch() (Result, error) {
 	return Result(res), err
 }
 
-// https://github.com/scylladb/scylla/blob/40adf38915b6d8f5314c621a94d694d172360833/compound_compat.hh#L33-L47
+// https://github.com/kulezi/scylla/blob/40adf38915b6d8f5314c621a94d694d172360833/compound_compat.hh#L33-L47
 func (q *Query) token() (transport.Token, bool) {
 	if q.stmt.PkCnt == 0 {
 		return 0, false

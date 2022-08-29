@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 	"go.uber.org/atomic"
 )
 

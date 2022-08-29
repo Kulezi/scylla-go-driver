@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kulezi/scylla-go-driver"
 	"github.com/pkg/profile"
-	"github.com/scylladb/scylla-go-driver"
 )
 
 const insertStmt = "INSERT INTO benchtab (pk, v1, v2) VALUES(?, ?, ?)"

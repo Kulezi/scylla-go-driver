@@ -3,7 +3,7 @@ package transport
 import (
 	"math/rand"
 
-	"github.com/scylladb/scylla-go-driver/transport/murmur"
+	"github.com/kulezi/scylla-go-driver/transport/murmur"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"math"
 	"math/bits"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 const (

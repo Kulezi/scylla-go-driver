@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/scylladb/scylla-go-driver"
+	"github.com/kulezi/scylla-go-driver"
 )
 
 type ClusterConfig struct {

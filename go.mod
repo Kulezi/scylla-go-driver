@@ -1,4 +1,4 @@
-module github.com/scylladb/scylla-go-driver
+module github.com/kulezi/scylla-go-driver
 
 go 1.18
 
