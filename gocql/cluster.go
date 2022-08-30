@@ -52,7 +52,7 @@ type ClusterConfig struct {
 
 	// Compression algorithm.
 	// Default: nil
-	// Compressor Compressor
+	Compressor Compressor
 
 	// Default: nil
 	// Authenticator Authenticator
@@ -109,7 +109,7 @@ type ClusterConfig struct {
 
 	// The maximum amount of time to wait for schema agreement in a cluster after
 	// receiving a schema change frame. (default: 60s)
-	// MaxWaitSchemaAgreement time.Duration
+	MaxWaitSchemaAgreement time.Duration
 
 	// HostFilter will filter all incoming events for host, any which don't pass
 	// the filter will be ignored. If set will take precedence over any options set
@@ -219,6 +219,9 @@ func NewCluster(hosts ...string) *ClusterConfig {
 func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
 	scfg := scylla.DefaultSessionConfig(cfg.Keyspace, cfg.Hosts...)
 	scfg.Hosts = cfg.Hosts
+	if _, ok := cfg.Compressor.(SnappyCompressor); ok {
+		scfg.Compression = scylla.Snappy
+	}
 	return scfg
 }
 

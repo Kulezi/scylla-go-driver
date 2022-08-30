@@ -2,13 +2,12 @@ package gocql
 
 import (
 	"context"
+	"time"
 
 	"github.com/kulezi/scylla-go-driver"
 )
 
 type Consistency = scylla.Consistency
-
-var Quorum = scylla.QUORUM
 
 type Session struct {
 	session *scylla.Session
@@ -39,4 +38,10 @@ func (s *Session) Query(stmt string, values ...interface{}) *Query {
 
 func (s *Session) Close() {
 	s.session.Close()
+}
+
+func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
+	// TODO: wait for actual schema agreement.
+	time.Sleep(time.Second)
+	return nil
 }
