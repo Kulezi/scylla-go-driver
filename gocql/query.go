@@ -137,7 +137,8 @@ func (q *Query) SerialConsistency(cons SerialConsistency) *Query {
 }
 
 func (q *Query) PageState(state []byte) *Query {
-	panic("unimplemented")
+	q.query.SetPageState(state)
+	return q
 }
 
 func (q *Query) NoSkipMetadata() *Query {
