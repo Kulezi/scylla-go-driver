@@ -3,7 +3,6 @@ package scylla
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -71,6 +70,9 @@ type SessionConfig struct {
 	Policy transport.HostSelectionPolicy
 	transport.ConnConfig
 }
+
+type DefaultLogger = transport.DefaultLogger
+type DebugLogger = transport.DebugLogger
 
 func DefaultSessionConfig(keyspace string, hosts ...string) SessionConfig {
 	return SessionConfig{
@@ -193,6 +195,6 @@ func (s *Session) NewTokenAwareDCAwarePolicy(localDC string) transport.HostSelec
 }
 
 func (s *Session) Close() {
-	log.Println("session: close")
+	s.cfg.Logger.Println("session: close")
 	s.cluster.Close()
 }
