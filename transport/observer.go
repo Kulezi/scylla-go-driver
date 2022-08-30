@@ -2,7 +2,6 @@ package transport
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -51,18 +50,20 @@ type ConnObserver interface {
 	OnPickReplacedWithLessBusyConn(ev ConnEvent)
 }
 
-type LoggingConnObserver struct{}
+type LoggingConnObserver struct {
+	logger Logger
+}
 
 var _ ConnObserver = LoggingConnObserver{}
 
 func (o LoggingConnObserver) OnConnect(ev ConnectEvent) {
 	if ev.Err != nil {
-		log.Printf("%s failed to open connection after %s: %s", ev, ev.Duration(), ev.Err)
+		o.logger.Printf("%s failed to open connection after %s: %s", ev, ev.Duration(), ev.Err)
 	} else {
-		log.Printf("%s connected in %s", ev, ev.Duration())
+		o.logger.Printf("%s connected in %s", ev, ev.Duration())
 	}
 }
 
 func (o LoggingConnObserver) OnPickReplacedWithLessBusyConn(ev ConnEvent) {
-	log.Printf("%s pick replaced with less busy conn", ev)
+	o.logger.Printf("%s pick replaced with less busy conn", ev)
 }
