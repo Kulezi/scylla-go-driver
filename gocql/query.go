@@ -59,7 +59,7 @@ func (q *Query) WithContext(ctx context.Context) *Query {
 	return q
 }
 
-func (q *Query) Consistency(c gocql.Consistency) *Query {
+func (q *Query) Consistency(c Consistency) *Query {
 	panic("unimplemented")
 }
 
@@ -76,7 +76,7 @@ func (q *Query) Trace(trace gocql.Tracer) *Query {
 
 // Observer enables query-level observer on this query.
 // The provided observer will be called every time this query is executed.
-func (q *Query) Observer(observer gocql.QueryObserver) *Query {
+func (q *Query) Observer(observer QueryObserver) *Query {
 	panic("unimplemented")
 }
 
@@ -101,11 +101,11 @@ func (q *Query) Prefetch(p float64) *Query {
 	panic("unimplemented")
 }
 
-func (q *Query) RetryPolicy(r gocql.RetryPolicy) *Query {
+func (q *Query) RetryPolicy(r RetryPolicy) *Query {
 	panic("unimplemented")
 }
 
-func (q *Query) SetSpeculativeExecutionPolicy(sp gocql.SpeculativeExecutionPolicy) *Query {
+func (q *Query) SetSpeculativeExecutionPolicy(sp SpeculativeExecutionPolicy) *Query {
 	panic("unimplemented")
 }
 
@@ -114,7 +114,7 @@ func (q *Query) Idempotent(value bool) *Query {
 	// q.query.SetIdempotent(value)
 }
 
-func (q *Query) SerialConsistency(cons gocql.SerialConsistency) *Query {
+func (q *Query) SerialConsistency(cons SerialConsistency) *Query {
 	panic("unimplemented")
 }
 
