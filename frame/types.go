@@ -350,6 +350,7 @@ const (
 	TimeID      OptionID = 0x0012
 	SmallIntID  OptionID = 0x0013
 	TinyIntID   OptionID = 0x0014
+	DurationID  OptionID = 0x0015
 	ListID      OptionID = 0x0020
 	MapID       OptionID = 0x0021
 	SetID       OptionID = 0x0022
