@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gocql/gocql"
 	"github.com/kulezi/scylla-go-driver/frame"
 	"github.com/kulezi/scylla-go-driver/transport"
 )
@@ -174,9 +173,13 @@ func (q *Query) checkBounds(pos int) error {
 	return nil
 }
 
+type Serializable interface {
+	Serialize(*frame.Option) (n int32, bytes []byte, err error)
+}
+
 // BindAny allows binding any value to the bind marker at given pos in query,
 // it shouldn't be used on non-prepared queries, as it will always result in query execution error later.
-func (q *Query) BindAny(pos int, x any) *Query {
+func (q *Query) Bind(pos int, v Serializable) *Query {
 	if q.stmt.Metadata == nil {
 		q.err = append(q.err, fmt.Errorf("binding any to unprepared queries is not supported"))
 		return q
@@ -185,25 +188,31 @@ func (q *Query) BindAny(pos int, x any) *Query {
 		q.err = append(q.err, err)
 		return q
 	}
+	p := &q.stmt.Values[pos]
 
 	var err error
-
-	typ := q.stmt.Values[pos].Type
-	if typ.ID == frame.ListID {
-		typ := gocql.CollectionType{
-			NativeType: gocql.NewNativeType(0x04, typ.Type(), ""),
-			Elem:       &q.stmt.Values[pos].Type.List.Element,
-		}
-		q.stmt.Values[pos].Bytes, err = gocql.Marshal(typ, x)
-	} else {
-		q.stmt.Values[pos].Bytes, err = gocql.Marshal(q.stmt.Values[pos].Type, x)
-	}
-
+	p.N, p.Bytes, err = v.Serialize(p.Type)
 	if err != nil {
 		q.err = append(q.err, err)
-		return q
 	}
-	q.stmt.Values[pos].N = int32(len(q.stmt.Values[pos].Bytes))
+	// var err error
+
+	// typ := q.stmt.Values[pos].Type
+	// if typ.ID == frame.ListID {
+	// 	typ := gocql.CollectionType{
+	// 		NativeType: gocql.NewNativeType(0x04, typ.Type(), ""),
+	// 		Elem:       &q.stmt.Values[pos].Type.List.Element,
+	// 	}
+	// 	q.stmt.Values[pos].Bytes, err = gocql.Marshal(typ, x)
+	// } else {
+	// 	q.stmt.Values[pos].Bytes, err = gocql.Marshal(q.stmt.Values[pos].Type, x)
+	// }
+
+	// if err != nil {
+	// 	q.err = append(q.err, err)
+	// 	return q
+	// }
+	// q.stmt.Values[pos].N = int32(len(q.stmt.Values[pos].Bytes))
 
 	return q
 }
@@ -305,25 +314,25 @@ var (
 	ErrNoMoreRows = fmt.Errorf("no more rows left")
 )
 
-func (it *Iter) Scan(dst ...interface{}) bool {
-	row, err := it.Next()
-	if err != nil {
-		return false
-	}
+// func (it *Iter) Scan(dst ...interface{}) bool {
+// 	row, err := it.Next()
+// 	if err != nil {
+// 		return false
+// 	}
 
-	if it.meta == nil || len(it.meta.Columns) != len(row) {
-		it.err = fmt.Errorf("column count mismatch, expected %d, got %d", len(it.meta.Columns), len(row))
-	}
+// 	if it.meta == nil || len(it.meta.Columns) != len(row) {
+// 		it.err = fmt.Errorf("column count mismatch, expected %d, got %d", len(it.meta.Columns), len(row))
+// 	}
 
-	for i := range row {
-		if err := gocql.Unmarshal(&it.meta.Columns[i].Type, row[i].Value, dst[i]); err != nil {
-			it.err = err
-			return false
-		}
-	}
+// 	for i := range row {
+// 		if err := Unmarshal(&it.meta.Columns[i].Type, row[i].Value, dst[i]); err != nil {
+// 			it.err = err
+// 			return false
+// 		}
+// 	}
 
-	return true
-}
+// 	return true
+// }
 
 func (it *Iter) Next() (frame.Row, error) {
 	if it.closed {

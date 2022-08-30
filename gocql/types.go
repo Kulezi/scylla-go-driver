@@ -2,7 +2,6 @@ package gocql
 
 import (
 	"errors"
-	"reflect"
 
 	"github.com/kulezi/scylla-go-driver/frame"
 )
@@ -51,27 +50,51 @@ type ColumnInfo struct {
 	TypeInfo TypeInfo
 }
 
-type optionWrap frame.Option
+type optionWrapper frame.Option
 
-func (o *optionWrap) Type() Type {
-	return Type(o.ID)
+func WrapOption(o *frame.Option) TypeInfo {
+	nt := NewNativeType(0x04, Type(o.ID), "")
+	switch o.ID {
+	case frame.ListID:
+		return CollectionType{
+			NativeType: nt,
+			Elem:       WrapOption(&o.List.Element),
+		}
+	case frame.SetID:
+		return CollectionType{
+			NativeType: nt,
+			Elem:       WrapOption(&o.Set.Element),
+		}
+	case frame.MapID:
+		return CollectionType{
+			NativeType: nt,
+			Key:        WrapOption(&o.Map.Key),
+			Elem:       WrapOption(&o.Map.Value),
+		}
+	case frame.UDTID:
+		return UDTTypeInfo{
+			NativeType: nt,
+			KeySpace:   o.UDT.Keyspace,
+			Name:       o.UDT.Name,
+			Elements:   getUDTFields(o.UDT),
+		}
+	case frame.CustomID:
+		panic("unimplemented")
+	default:
+		return NewNativeType(0x04, Type(o.ID), "")
+	}
 }
 
-func (o *optionWrap) Version() byte {
-	return frame.CQLv4
-}
+func getUDTFields(udt *frame.UDTOption) []UDTField {
+	res := make([]UDTField, len(udt.FieldNames))
+	for i := range res {
+		res[i] = UDTField{
+			Name: udt.FieldNames[i],
+			Type: WrapOption(&udt.FieldTypes[i]),
+		}
+	}
 
-func (o *optionWrap) Custom() string {
-	return ""
-}
-
-func (o *optionWrap) New() interface{} {
-	return nil
-}
-
-func (o *optionWrap) NewWithError() (interface{}, error) {
-	typ := goType(o)
-	return reflect.New(typ).Interface(), nil
+	return res
 }
 
 var ErrNotFound = errors.New("not found")

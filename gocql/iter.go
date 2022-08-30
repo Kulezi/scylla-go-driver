@@ -1,21 +1,27 @@
 package gocql
 
-import "github.com/kulezi/scylla-go-driver"
+import (
+	"fmt"
+
+	"github.com/kulezi/scylla-go-driver"
+	"github.com/kulezi/scylla-go-driver/frame"
+)
 
 type Iter struct {
-	it scylla.Iter
+	it  scylla.Iter
+	err error
 }
 
 func (it *Iter) Columns() []ColumnInfo {
 	c := it.it.Columns()
 	cols := make([]ColumnInfo, len(c))
 	for i, v := range c {
-		typ := optionWrap(v.Type)
+		typ := WrapOption(&v.Type)
 		cols[i] = ColumnInfo{
 			Keyspace: v.Keyspace,
 			Table:    v.Table,
 			Name:     v.Name,
-			TypeInfo: &typ,
+			TypeInfo: typ,
 		}
 	}
 
@@ -31,7 +37,29 @@ func (it *Iter) Close() error {
 }
 
 func (it *Iter) Scan(dest ...interface{}) bool {
-	return it.it.Scan(dest...)
+	if it.err != nil {
+		return false
+	}
+
+	var r frame.Row
+	r, it.err = it.it.Next()
+	if it.err != nil {
+		return false
+	}
+
+	if len(dest) != len(r) {
+		it.err = fmt.Errorf("expected %d columns, got %d", len(dest), len(r))
+		return false
+	}
+
+	for i := range dest {
+		it.err = Unmarshal(WrapOption(r[i].Type), r[i].Value, dest[i])
+		if it.err != nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (it *Iter) PageState() []byte {

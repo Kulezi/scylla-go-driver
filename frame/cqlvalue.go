@@ -7,17 +7,11 @@ import (
 	"net"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/gocql/gocql"
 )
 
 type CqlValue struct {
 	Type  *Option
 	Value Bytes
-}
-
-func (c CqlValue) Unmarshal(dst interface{}) error {
-	return gocql.Unmarshal(c.Type, c.Value, dst)
 }
 
 func (c CqlValue) AsASCII() (string, error) {
