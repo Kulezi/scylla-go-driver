@@ -63,5 +63,5 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 }
 
 func (it *Iter) PageState() []byte {
-	return nil
+	return it.it.PageState()
 }

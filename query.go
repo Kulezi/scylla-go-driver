@@ -17,7 +17,8 @@ type Query struct {
 	asyncExec func(context.Context, *transport.Conn, transport.Statement, frame.Bytes, transport.ResponseHandler)
 	res       []transport.ResponseHandler
 
-	err []error
+	pageState []byte
+	err       []error
 }
 
 func (q *Query) Exec(ctx context.Context) (Result, error) {
@@ -29,7 +30,7 @@ func (q *Query) Exec(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 
-	res, err := q.exec(ctx, conn, q.stmt, nil)
+	res, err := q.exec(ctx, conn, q.stmt, q.pageState)
 	return Result(res), err
 }
 
@@ -65,7 +66,7 @@ func (q *Query) AsyncExec(ctx context.Context) {
 
 	h := transport.MakeResponseHandler()
 	q.res = append(q.res, h)
-	q.asyncExec(ctx, conn, stmt, nil, h)
+	q.asyncExec(ctx, conn, stmt, q.pageState, h)
 }
 
 var ErrNoQueryResults = fmt.Errorf("no query results to be fetched")
@@ -196,6 +197,14 @@ func (q *Query) BindInt64(pos int, v int64) *Query {
 	return q
 }
 
+func (q *Query) SetPageState(v []byte) {
+	q.pageState = v
+}
+
+func (q *Query) PageState() []byte {
+	return q.pageState
+}
+
 func (q *Query) SetPageSize(v int32) {
 	q.stmt.PageSize = v
 }
@@ -216,6 +225,13 @@ type Result transport.QueryResult
 
 func (q *Query) Iter(ctx context.Context) Iter {
 	stmt := q.stmt.Clone()
+
+	var pageState []byte
+	if q.pageState != nil {
+		pageState := make([]byte, len(q.pageState))
+		copy(pageState, q.pageState)
+	}
+
 	it := Iter{
 		requestCh: make(chan struct{}, 1),
 		nextCh:    make(chan transport.QueryResult),
@@ -237,6 +253,8 @@ func (q *Query) Iter(ctx context.Context) Iter {
 		requestCh: it.requestCh,
 		nextCh:    it.nextCh,
 		errCh:     it.errCh,
+
+		pagingState: pageState,
 	}
 
 	it.requestCh <- struct{}{}
@@ -329,6 +347,10 @@ func (it *Iter) Columns() []frame.ColumnSpec {
 
 func (it *Iter) NumRows() int {
 	return it.rowCnt
+}
+
+func (it *Iter) PageState() []byte {
+	return it.result.PagingState
 }
 
 type iterWorker struct {
