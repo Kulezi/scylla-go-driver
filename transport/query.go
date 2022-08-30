@@ -18,6 +18,7 @@ type Statement struct {
 	Tracing           bool
 	Compression       bool
 	Idempotent        bool
+	NoSkipMetadata    bool
 	Metadata          *frame.ResultMetadata
 }
 
@@ -48,7 +49,7 @@ func makeQuery(s Statement, pagingState frame.Bytes) Query {
 }
 
 func makeExecute(s Statement, pagingState frame.Bytes) Execute {
-	return Execute{
+	res := Execute{
 		ID:          s.ID,
 		Consistency: s.Consistency,
 		Options: frame.QueryOptions{
@@ -59,6 +60,11 @@ func makeExecute(s Statement, pagingState frame.Bytes) Execute {
 			PageSize:          s.PageSize,
 		},
 	}
+	if s.NoSkipMetadata {
+		res.Options.Flags &= ^frame.SkipMetadata
+	}
+
+	return res
 }
 
 func makeStatement(cql string) Statement {
