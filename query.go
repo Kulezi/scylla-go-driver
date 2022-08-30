@@ -197,6 +197,14 @@ func (q *Query) BindInt64(pos int, v int64) *Query {
 	return q
 }
 
+func (q *Query) SetSerialConsistency(v frame.Consistency) {
+	q.stmt.SerialConsistency = v
+}
+
+func (q *Query) SerialConsistency(v frame.Consistency) frame.Consistency {
+	return q.stmt.SerialConsistency
+}
+
 func (q *Query) SetPageState(v []byte) {
 	q.pageState = v
 }
