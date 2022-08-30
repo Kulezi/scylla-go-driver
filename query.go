@@ -2,6 +2,7 @@ package scylla
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -344,7 +345,9 @@ func (it *Iter) Next() (frame.Row, error) {
 		case r := <-it.nextCh:
 			it.result = r
 		case err := <-it.errCh:
-			it.err = err
+			if !errors.Is(err, ErrNoMoreRows) {
+				it.err = err
+			}
 			return nil, it.Close()
 		}
 
