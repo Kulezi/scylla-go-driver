@@ -33,3 +33,7 @@ func (it *Iter) Close() error {
 func (it *Iter) Scan(dest ...interface{}) bool {
 	return it.it.Scan(dest...)
 }
+
+func (it *Iter) PageState() []byte {
+	return nil
+}
