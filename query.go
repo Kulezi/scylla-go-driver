@@ -278,6 +278,11 @@ func (q *Query) Idempotent() bool {
 	return q.stmt.Idempotent
 }
 
+func (q *Query) NoSkipMetadata() *Query {
+	q.stmt.NoSkipMetadata = true
+	return q
+}
+
 type Result transport.QueryResult
 
 func (q *Query) Iter(ctx context.Context) Iter {

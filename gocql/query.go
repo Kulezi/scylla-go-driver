@@ -143,5 +143,6 @@ func (q *Query) PageState(state []byte) *Query {
 }
 
 func (q *Query) NoSkipMetadata() *Query {
-	panic("unimplemented")
+	q.query.NoSkipMetadata()
+	return q
 }
