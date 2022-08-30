@@ -63,7 +63,7 @@ type ClusterConfig struct {
 
 	// Default retry policy to use for queries.
 	// Default: no retries.
-	// RetryPolicy RetryPolicy
+	RetryPolicy RetryPolicy
 
 	// ConvictionPolicy decides whether to mark host as down based on the error and host info.
 	// Default: SimpleConvictionPolicy
