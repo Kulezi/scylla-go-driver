@@ -71,6 +71,8 @@ type connWriter struct {
 
 	// For use only when skipping sending a request.
 	freeStream func(frame.StreamID)
+
+	logger Logger
 }
 
 func (c *connWriter) submit(r request) {
@@ -105,14 +107,14 @@ func (c *connWriter) loop(ctx context.Context) {
 					c.freeStream(r.StreamID)
 					continue
 				}
-				log.Printf("%s fatal send error, closing connection due to %s", c.connString(), err)
+				c.logger.Printf("%s fatal send error, closing connection due to %s", c.connString(), err)
 				c.connClose()
 				return
 			}
 			c.stats.inFlight.Inc()
 		}
 		if err := c.conn.Flush(); err != nil {
-			log.Printf("%s fatal flush error, closing connection due to %s", c.connString(), err)
+			c.logger.Printf("%s fatal flush error, closing connection due to %s", c.connString(), err)
 			c.connClose()
 			return
 		}
@@ -172,6 +174,8 @@ type connReader struct {
 	s      streamIDAllocator
 	closed bool
 	mu     sync.Mutex // mu guards h, s and closed
+
+	logger Logger
 }
 
 func (c *connReader) setHandler(h ResponseHandler) (frame.StreamID, error) {
@@ -221,7 +225,7 @@ func (c *connReader) loop(ctx context.Context) {
 		}
 
 		if resp.Err != nil {
-			log.Printf("%s fatal receive error, closing connection due to %s", c.connString(), resp.Err)
+			c.logger.Printf("%s fatal receive error, closing connection due to %s", c.connString(), resp.Err)
 			c.connClose()
 			c.drainHandlers()
 			return
@@ -232,7 +236,7 @@ func (c *connReader) loop(ctx context.Context) {
 		if h := c.handler(resp.StreamID); h != nil {
 			h <- resp
 		} else {
-			log.Printf("%s received unknown stream ID %d, closing connection", c.connString(), resp.StreamID)
+			c.logger.Printf("%s received unknown stream ID %d, closing connection", c.connString(), resp.StreamID)
 			c.connClose()
 			c.drainHandlers()
 			return
@@ -347,6 +351,7 @@ type ConnConfig struct {
 	ComprBufferSize int
 
 	ConnObserver ConnObserver
+	Logger       Logger
 }
 
 func DefaultConnConfig(keyspace string) ConnConfig {
@@ -358,8 +363,9 @@ func DefaultConnConfig(keyspace string) ConnConfig {
 		Timeout:            500 * time.Millisecond,
 		DefaultConsistency: frame.LOCALQUORUM,
 		DefaultPort:        "9042",
-		ConnObserver:       LoggingConnObserver{},
 		ComprBufferSize:    comprBufferSize,
+		ConnObserver:       LoggingConnObserver{logger: DefaultLogger{}},
+		Logger:             DefaultLogger{},
 	}
 }
 
@@ -378,7 +384,7 @@ func OpenShardConn(ctx context.Context, addr string, si ShardInfo, cfg ConnConfi
 	for i := 0; i < maxTries; i++ {
 		conn, err := OpenLocalPortConn(ctx, addr, it(), cfg)
 		if err != nil {
-			log.Printf("%s dial error: %s (try %d/%d)", addr, err, i, maxTries)
+			cfg.Logger.Printf("%s dial error: %s (try %d/%d)", addr, err, i, maxTries)
 			if conn != nil {
 				conn.Close()
 			}
@@ -467,6 +473,8 @@ func WrapConn(ctx context.Context, conn net.Conn, cfg ConnConfig) (*Conn, error)
 			stats:      s,
 			connString: c.String,
 			connClose:  c.Close,
+
+			logger: cfg.Logger,
 		},
 		r: connReader{
 			conn: io.LimitedReader{
@@ -476,6 +484,8 @@ func WrapConn(ctx context.Context, conn net.Conn, cfg ConnConfig) (*Conn, error)
 			h:          make(map[frame.StreamID]ResponseHandler),
 			connString: c.String,
 			connClose:  c.Close,
+
+			logger: cfg.Logger,
 		},
 		stats: s,
 	}
@@ -796,9 +806,9 @@ func (c *Conn) Shard() int {
 func (c *Conn) Close() {
 	c.closeOnce.Do(func() {
 		if err := c.conn.Close(); err != nil {
-			log.Printf("%s failed to close: %s", c, err)
+			c.cfg.Logger.Printf("%s failed to close: %s", c, err)
 		} else {
-			log.Printf("%s closed", c)
+			c.cfg.Logger.Printf("%s closed", c)
 		}
 		c.w.requestCh <- _connCloseRequest
 		if c.onClose != nil {
