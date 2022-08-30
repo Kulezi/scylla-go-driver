@@ -39,6 +39,10 @@ type SpeculativeExecutionPolicy interface{}
 type SerialConsistency interface{}
 type QueryObserver interface{}
 type Tracer interface{}
+type Compressor interface{}
+type SimpleRetryPolicy struct {
+	NumRetries int
+}
 
 type ColumnInfo struct {
 	Keyspace string
@@ -71,3 +75,19 @@ func (o *optionWrap) NewWithError() (interface{}, error) {
 }
 
 var ErrNotFound = errors.New("not found")
+
+const (
+	Any         Consistency = 0x00
+	One         Consistency = 0x01
+	Two         Consistency = 0x02
+	Three       Consistency = 0x03
+	Quorum      Consistency = 0x04
+	All         Consistency = 0x05
+	LocalQuorum Consistency = 0x06
+	EachQuorum  Consistency = 0x07
+	Serial      Consistency = 0x08
+	LocalSerial Consistency = 0x09
+	LocalOne    Consistency = 0x0A
+)
+
+type SnappyCompressor struct{}
