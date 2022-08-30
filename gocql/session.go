@@ -7,8 +7,6 @@ import (
 	"github.com/kulezi/scylla-go-driver"
 )
 
-type Consistency scylla.Consistency
-
 type Session struct {
 	session *scylla.Session
 }

@@ -3,6 +3,7 @@ package gocql
 import (
 	"errors"
 
+	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
 )
 
@@ -98,6 +99,8 @@ func getUDTFields(udt *frame.UDTOption) []UDTField {
 }
 
 var ErrNotFound = errors.New("not found")
+
+type Consistency scylla.Consistency
 
 const (
 	Any         Consistency = 0x00
