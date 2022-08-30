@@ -132,8 +132,9 @@ func (q *Query) Idempotent(value bool) *Query {
 	// q.query.SetIdempotent(value)
 }
 
-func (q *Query) SerialConsistency(cons SerialConsistency) *Query {
-	panic("unimplemented")
+func (q *Query) SerialConsistency(cons Consistency) *Query {
+	q.query.SetSerialConsistency(frame.Consistency(cons))
+	return q
 }
 
 func (q *Query) PageState(state []byte) *Query {
