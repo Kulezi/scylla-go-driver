@@ -38,6 +38,9 @@ func (it *Iter) NumRows() int {
 }
 
 func (it *Iter) Close() error {
+	if it.err != nil {
+		return it.err
+	}
 	return it.it.Close()
 }
 
@@ -50,6 +53,10 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 	r, it.err = it.it.Next()
 	if it.err != nil {
 		return false
+	}
+
+	if len(r) == 0 {
+		return true
 	}
 
 	if len(dest) != len(r) {
