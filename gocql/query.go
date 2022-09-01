@@ -89,7 +89,10 @@ func (q *Query) prepare() {
 
 func (q *Query) Iter() *Iter {
 	q.prepare()
-	return &Iter{it: q.query.Iter(q.ctx), err: q.err}
+	if q.err != nil {
+		return &Iter{it: scylla.Iter{}, err: q.err}
+	}
+	return &Iter{it: q.query.Iter(q.ctx)}
 }
 
 func (q *Query) Release() {
