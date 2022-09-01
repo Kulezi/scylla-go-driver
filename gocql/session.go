@@ -17,19 +17,10 @@ func NewSession(cfg ClusterConfig) (*Session, error) {
 }
 
 func (s *Session) Query(stmt string, values ...interface{}) *Query {
-	q, err := s.session.Prepare(context.Background(), stmt)
-	if err != nil {
-		return nil
-	}
-
-	for i, v := range values {
-		q.Bind(i, anyWrapper{v})
-	}
-
 	return &Query{
-		ctx:   context.Background(),
-		query: q,
-		err:   err,
+		ctx:    context.Background(),
+		query:  s.session.Query(stmt),
+		values: values,
 	}
 }
 

@@ -14,6 +14,10 @@ type Iter struct {
 }
 
 func (it *Iter) Columns() []ColumnInfo {
+	if it.err != nil {
+		return nil
+	}
+
 	c := it.it.Columns()
 	cols := make([]ColumnInfo, len(c))
 	for i, v := range c {

@@ -2,7 +2,6 @@ package gocql
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
@@ -11,9 +10,11 @@ import (
 )
 
 type Query struct {
-	ctx   context.Context
-	query scylla.Query
-	err   error
+	ctx      context.Context
+	query    scylla.Query
+	err      error
+	values   []interface{}
+	prepared bool
 }
 
 type anyWrapper struct {
@@ -32,18 +33,19 @@ func (w anyWrapper) Serialize(o *frame.Option) (n int32, bytes []byte, err error
 }
 
 func (q *Query) Bind(values ...interface{}) *Query {
+	if !q.prepared {
+		q.values = values
+		return q
+	}
+
 	for i, v := range values {
 		q.query.Bind(i, anyWrapper{v})
 	}
 	return q
 }
 
-var ErrQueryIsNil = errors.New("Query is nil")
-
 func (q *Query) Exec() error {
-	if q == nil {
-		return ErrQueryIsNil
-	}
+	q.prepare()
 	_, err := q.query.Exec(q.ctx)
 	return err
 }
@@ -53,10 +55,7 @@ func unmarshalCqlValue(c frame.CqlValue, dst interface{}) error {
 }
 
 func (q *Query) Scan(values ...interface{}) error {
-	if q == nil {
-		return ErrQueryIsNil
-	}
-
+	q.prepare()
 	res, err := q.query.Exec(q.ctx)
 	if err != nil {
 		return err
@@ -75,11 +74,22 @@ func (q *Query) Scan(values ...interface{}) error {
 	return nil
 }
 
-func (q *Query) Iter() *Iter {
-	if q == nil {
-		return nil
+func (q *Query) prepare() {
+	if q.prepared || q.err != nil {
+		return
 	}
-	return &Iter{it: q.query.Iter(q.ctx)}
+
+	q.err = q.query.Prepare(q.ctx)
+	q.prepared = true
+	for i, v := range q.values {
+		q.query.Bind(i, anyWrapper{v})
+	}
+	q.values = nil
+}
+
+func (q *Query) Iter() *Iter {
+	q.prepare()
+	return &Iter{it: q.query.Iter(q.ctx), err: q.err}
 }
 
 func (q *Query) Release() {
