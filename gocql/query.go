@@ -3,6 +3,7 @@ package gocql
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -120,7 +121,8 @@ func (q *Query) Prefetch(p float64) *Query {
 }
 
 func (q *Query) RetryPolicy(r RetryPolicy) *Query {
-	panic("unimplemented")
+	log.Println("TODO: use retry policy")
+	return q
 }
 
 func (q *Query) SetSpeculativeExecutionPolicy(sp SpeculativeExecutionPolicy) *Query {
