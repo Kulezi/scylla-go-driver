@@ -328,7 +328,7 @@ var (
 
 func (it *Iter) Next() (frame.Row, error) {
 	if it.closed {
-		return nil, ErrClosedIter
+		return nil, nil
 	}
 
 	if it.pos >= it.rowCnt {
