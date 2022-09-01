@@ -18,13 +18,12 @@ func NewSession(cfg ClusterConfig) (*Session, error) {
 
 func (s *Session) Query(stmt string, values ...interface{}) *Query {
 	q, err := s.session.Prepare(context.Background(), stmt)
-	for i, v := range values {
-		v, ok := v.(int64)
-		if !ok {
-			panic("not int64")
-		}
+	if err != nil {
+		return nil
+	}
 
-		q.BindInt64(i, v)
+	for i, v := range values {
+		q.Bind(i, anyWrapper{v})
 	}
 
 	return &Query{
