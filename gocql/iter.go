@@ -56,7 +56,7 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 	}
 
 	if len(r) == 0 {
-		return true
+		return false
 	}
 
 	if len(dest) != len(r) {
