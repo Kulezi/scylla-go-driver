@@ -2,6 +2,7 @@ package gocql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -37,7 +38,12 @@ func (q *Query) Bind(values ...interface{}) *Query {
 	return q
 }
 
+var ErrQueryIsNil = errors.New("Query is nil")
+
 func (q *Query) Exec() error {
+	if q == nil {
+		return ErrQueryIsNil
+	}
 	_, err := q.query.Exec(q.ctx)
 	return err
 }
@@ -47,6 +53,10 @@ func unmarshalCqlValue(c frame.CqlValue, dst interface{}) error {
 }
 
 func (q *Query) Scan(values ...interface{}) error {
+	if q == nil {
+		return ErrQueryIsNil
+	}
+
 	res, err := q.query.Exec(q.ctx)
 	if err != nil {
 		return err
@@ -66,6 +76,9 @@ func (q *Query) Scan(values ...interface{}) error {
 }
 
 func (q *Query) Iter() *Iter {
+	if q == nil {
+		return nil
+	}
 	return &Iter{it: q.query.Iter(q.ctx)}
 }
 
