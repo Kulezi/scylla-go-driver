@@ -117,3 +117,9 @@ const (
 )
 
 type SnappyCompressor struct{}
+
+type Authenticator interface{}
+
+type PasswordAuthenticator struct {
+	Username, Password string
+}

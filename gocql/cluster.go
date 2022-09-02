@@ -55,7 +55,7 @@ type ClusterConfig struct {
 	Compressor Compressor
 
 	// Default: nil
-	// Authenticator Authenticator
+	Authenticator Authenticator
 
 	// An Authenticator factory. Can be used to create alternative authenticators.
 	// Default: nil
@@ -222,6 +222,12 @@ func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
 	if _, ok := cfg.Compressor.(SnappyCompressor); ok {
 		scfg.Compression = scylla.Snappy
 	}
+
+	if auth, ok := cfg.Authenticator.(PasswordAuthenticator); ok {
+		scfg.Username = auth.Username
+		scfg.Password = auth.Password
+	}
+
 	return scfg
 }
 
