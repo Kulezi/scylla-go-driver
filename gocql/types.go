@@ -138,6 +138,8 @@ type TypeInfo interface {
 	New() interface{}
 }
 
+type Option = frame.Option
+
 type NativeType struct {
 	proto  byte
 	typ    Type
