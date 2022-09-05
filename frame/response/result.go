@@ -50,9 +50,15 @@ func ParseRowsResult(b *frame.Buffer) *RowsResult {
 			return nil
 		}
 		r.RowsContent[i] = holder[i*int(r.Metadata.ColumnsCnt) : (i+1)*int(r.Metadata.ColumnsCnt)]
+		var rowHolder []byte
 		for j := 0; j < int(r.Metadata.ColumnsCnt); j++ {
+			n := b.ReadInt()
+			l := len(rowHolder)
+			for cnt := int32(0); cnt < n; cnt++ {
+				rowHolder = append(rowHolder, b.ReadByte())
+			}
 			r.RowsContent[i][j] = frame.CqlValue{
-				Value: b.ReadBytes(),
+				Value: rowHolder[l:],
 			}
 
 			if r.Metadata.Columns != nil {
