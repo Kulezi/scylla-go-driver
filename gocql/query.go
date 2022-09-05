@@ -22,8 +22,8 @@ type anyWrapper struct {
 }
 
 func (w anyWrapper) Serialize(o *frame.Option) (n int32, bytes []byte, err error) {
-	ti := WrapOption(o)
-	bytes, err = Marshal(ti, w.val)
+	// ti := WrapOption(o)
+	bytes, err = Marshal(o, w.val)
 	if bytes == nil {
 		n = -1
 	} else {
@@ -51,7 +51,7 @@ func (q *Query) Exec() error {
 }
 
 func unmarshalCqlValue(c frame.CqlValue, dst interface{}) error {
-	return Unmarshal(WrapOption(c.Type), c.Value, dst)
+	return Unmarshal(c.Type, c.Value, dst)
 }
 
 func (q *Query) Scan(values ...interface{}) error {

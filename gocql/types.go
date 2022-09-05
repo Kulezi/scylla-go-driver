@@ -1,7 +1,10 @@
 package gocql
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -122,4 +125,128 @@ type Authenticator interface{}
 
 type PasswordAuthenticator struct {
 	Username, Password string
+}
+
+// TypeInfo describes a Cassandra specific data type.
+type TypeInfo interface {
+	Type() Type
+	Version() byte
+	Custom() string
+
+	// New creates a pointer to an empty version of whatever type
+	// is referenced by the TypeInfo receiver
+	New() interface{}
+}
+
+type NativeType struct {
+	proto  byte
+	typ    Type
+	custom string // only used for TypeCustom
+}
+
+func NewNativeType(proto byte, typ Type, custom string) NativeType {
+	return NativeType{proto, typ, custom}
+}
+
+func (t NativeType) New() interface{} {
+	return reflect.New(goType(t)).Interface()
+}
+
+func (s NativeType) Type() Type {
+	return s.typ
+}
+
+func (s NativeType) Version() byte {
+	return s.proto
+}
+
+func (s NativeType) Custom() string {
+	return s.custom
+}
+
+func (s NativeType) String() string {
+	switch s.typ {
+	case TypeCustom:
+		return fmt.Sprintf("%s(%s)", s.typ, s.custom)
+	default:
+		return s.typ.String()
+	}
+}
+
+type CollectionType struct {
+	NativeType
+	Key  TypeInfo // only used for TypeMap
+	Elem TypeInfo // only used for TypeMap, TypeList and TypeSet
+}
+
+func (t CollectionType) New() interface{} {
+	return reflect.New(goType(t)).Interface()
+}
+
+func (c CollectionType) String() string {
+	switch c.typ {
+	case TypeMap:
+		return fmt.Sprintf("%s(%s, %s)", c.typ, c.Key, c.Elem)
+	case TypeList, TypeSet:
+		return fmt.Sprintf("%s(%s)", c.typ, c.Elem)
+	case TypeCustom:
+		return fmt.Sprintf("%s(%s)", c.typ, c.custom)
+	default:
+		return c.typ.String()
+	}
+}
+
+type TupleTypeInfo struct {
+	NativeType
+	Elems []TypeInfo
+}
+
+func (t TupleTypeInfo) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("%s(", t.typ))
+	for _, elem := range t.Elems {
+		buf.WriteString(fmt.Sprintf("%s, ", elem))
+	}
+	buf.Truncate(buf.Len() - 2)
+	buf.WriteByte(')')
+	return buf.String()
+}
+
+func (t TupleTypeInfo) New() interface{} {
+	return reflect.New(goType(t)).Interface()
+}
+
+type UDTField struct {
+	Name string
+	Type TypeInfo
+}
+
+type UDTTypeInfo struct {
+	NativeType
+	KeySpace string
+	Name     string
+	Elements []UDTField
+}
+
+func (u UDTTypeInfo) New() interface{} {
+	return reflect.New(goType(u)).Interface()
+}
+
+func (u UDTTypeInfo) String() string {
+	buf := &bytes.Buffer{}
+
+	fmt.Fprintf(buf, "%s.%s{", u.KeySpace, u.Name)
+	first := true
+	for _, e := range u.Elements {
+		if !first {
+			fmt.Fprint(buf, ",")
+		} else {
+			first = false
+		}
+
+		fmt.Fprintf(buf, "%s=%v", e.Name, e.Type)
+	}
+	fmt.Fprint(buf, "}")
+
+	return buf.String()
 }

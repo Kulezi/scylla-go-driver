@@ -68,7 +68,7 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 		if dest[i] == nil {
 			continue
 		}
-		it.err = Unmarshal(WrapOption(r[i].Type), r[i].Value, dest[i])
+		it.err = Unmarshal(r[i].Type, r[i].Value, dest[i])
 		if it.err != nil {
 			return false
 		}

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/kulezi/scylla-go-driver/frame"
 	"gopkg.in/inf.v0"
 )
 
@@ -32,6 +33,57 @@ func appendBytes(p []byte, d []byte) []byte {
 	p = appendInt(p, int32(len(d)))
 	p = append(p, d...)
 	return p
+}
+
+func goTypeFromOption(t *frame.Option) reflect.Type {
+	switch Type(t.ID) {
+	case TypeVarchar, TypeAscii, TypeInet, TypeText:
+		return reflect.TypeOf(*new(string))
+	case TypeBigInt, TypeCounter:
+		return reflect.TypeOf(*new(int64))
+	case TypeTime:
+		return reflect.TypeOf(*new(time.Duration))
+	case TypeTimestamp:
+		return reflect.TypeOf(*new(time.Time))
+	case TypeBlob:
+		return reflect.TypeOf(*new([]byte))
+	case TypeBoolean:
+		return reflect.TypeOf(*new(bool))
+	case TypeFloat:
+		return reflect.TypeOf(*new(float32))
+	case TypeDouble:
+		return reflect.TypeOf(*new(float64))
+	case TypeInt:
+		return reflect.TypeOf(*new(int))
+	case TypeSmallInt:
+		return reflect.TypeOf(*new(int16))
+	case TypeTinyInt:
+		return reflect.TypeOf(*new(int8))
+	case TypeDecimal:
+		return reflect.TypeOf(*new(*inf.Dec))
+	case TypeUUID, TypeTimeUUID:
+		return reflect.TypeOf(*new(UUID))
+	case TypeList:
+		return reflect.SliceOf(goTypeFromOption(&t.List.Element))
+	case TypeSet:
+		return reflect.SliceOf(goTypeFromOption(&t.Set.Element))
+	case TypeMap:
+		return reflect.MapOf(goTypeFromOption(&t.Map.Key), goTypeFromOption(&t.Map.Value))
+	case TypeVarint:
+		return reflect.TypeOf(*new(*big.Int))
+	case TypeTuple:
+		// what can we do here? all there is to do is to make a list of interface{}
+		tuple := t.Tuple
+		return reflect.TypeOf(make([]interface{}, len(tuple.ValueTypes)))
+	case TypeUDT:
+		return reflect.TypeOf(make(map[string]interface{}))
+	case TypeDate:
+		return reflect.TypeOf(*new(time.Time))
+	case TypeDuration:
+		return reflect.TypeOf(*new(Duration))
+	default:
+		return nil
+	}
 }
 
 func goType(t TypeInfo) reflect.Type {
