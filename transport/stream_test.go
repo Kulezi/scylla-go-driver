@@ -3,7 +3,7 @@ package transport
 import (
 	"testing"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 func TestStreamIDAllocator(t *testing.T) {

@@ -22,6 +22,7 @@ type (
 
 // https://github.com/apache/cassandra/blob/adcff3f630c0d07d1ba33bf23fcb11a6db1b9af1/doc/native_protocol_v4.spec#L229-L233
 type Value struct {
+	Type  *Option
 	N     Int
 	Bytes Bytes
 }
@@ -349,6 +350,7 @@ const (
 	TimeID      OptionID = 0x0012
 	SmallIntID  OptionID = 0x0013
 	TinyIntID   OptionID = 0x0014
+	DurationID  OptionID = 0x0015
 	ListID      OptionID = 0x0020
 	MapID       OptionID = 0x0021
 	SetID       OptionID = 0x0022
@@ -381,8 +383,8 @@ type SetOption struct {
 type UDTOption struct {
 	Keyspace   string
 	Name       string
-	fieldNames []string
-	fieldTypes []Option
+	FieldNames []string
+	FieldTypes []Option
 }
 
 // https://github.com/apache/cassandra/blob/adcff3f630c0d07d1ba33bf23fcb11a6db1b9af1/doc/native_protocol_v4.spec#L655-L658
@@ -392,13 +394,13 @@ type TupleOption struct {
 
 // https://github.com/apache/cassandra/blob/adcff3f630c0d07d1ba33bf23fcb11a6db1b9af1/doc/native_protocol_v4.spec#L236-L239
 type Option struct {
-	ID     OptionID
-	Custom *CustomOption
-	List   *ListOption
-	Map    *MapOption
-	Set    *SetOption
-	UDT    *UDTOption
-	Tuple  *TupleOption
+	ID           OptionID
+	CustomOption *CustomOption
+	List         *ListOption
+	Map          *MapOption
+	Set          *SetOption
+	UDT          *UDTOption
+	Tuple        *TupleOption
 }
 
 // https://github.com/apache/cassandra/blob/adcff3f630c0d07d1ba33bf23fcb11a6db1b9af1/doc/native_protocol_v4.spec#L240

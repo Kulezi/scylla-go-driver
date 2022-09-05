@@ -1,9 +1,9 @@
 package transport
 
 import (
-	"github.com/scylladb/scylla-go-driver/frame"
-	. "github.com/scylladb/scylla-go-driver/frame/request"
-	. "github.com/scylladb/scylla-go-driver/frame/response"
+	"github.com/kulezi/scylla-go-driver/frame"
+	. "github.com/kulezi/scylla-go-driver/frame/request"
+	. "github.com/kulezi/scylla-go-driver/frame/response"
 )
 
 type Statement struct {
@@ -17,6 +17,7 @@ type Statement struct {
 	SerialConsistency frame.Consistency
 	Tracing           bool
 	Compression       bool
+	NoSkipMetadata    bool
 	Metadata          *frame.ResultMetadata
 }
 
@@ -47,7 +48,7 @@ func makeQuery(s Statement, pagingState frame.Bytes) Query {
 }
 
 func makeExecute(s Statement, pagingState frame.Bytes) Execute {
-	return Execute{
+	res := Execute{
 		ID:          s.ID,
 		Consistency: s.Consistency,
 		Options: frame.QueryOptions{
@@ -58,6 +59,11 @@ func makeExecute(s Statement, pagingState frame.Bytes) Execute {
 			PageSize:          s.PageSize,
 		},
 	}
+	if s.NoSkipMetadata {
+		res.Options.Flags &= ^frame.SkipMetadata
+	}
+
+	return res
 }
 
 func makeStatement(cql string) Statement {

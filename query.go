@@ -2,10 +2,11 @@ package scylla
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/scylladb/scylla-go-driver/frame"
-	"github.com/scylladb/scylla-go-driver/transport"
+	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 type Query struct {
@@ -15,15 +16,33 @@ type Query struct {
 	exec      func(context.Context, *transport.Conn, transport.Statement, frame.Bytes) (transport.QueryResult, error)
 	asyncExec func(context.Context, *transport.Conn, transport.Statement, frame.Bytes, transport.ResponseHandler)
 	res       []transport.ResponseHandler
+
+	pageState []byte
+	err       []error
+}
+
+func (q *Query) Prepare(ctx context.Context) error {
+	p, err := q.session.prepareStatement(ctx, q.stmt)
+	if err != nil {
+		return err
+	}
+
+	q.stmt = p.stmt
+	q.exec = p.exec
+	q.asyncExec = p.asyncExec
+	return nil
 }
 
 func (q *Query) Exec(ctx context.Context) (Result, error) {
+	if q.err != nil {
+		return Result{}, fmt.Errorf("query can't be executed: %v", q.err)
+	}
 	conn, err := q.pickConn()
 	if err != nil {
 		return Result{}, err
 	}
 
-	res, err := q.exec(ctx, conn, q.stmt, nil)
+	res, err := q.exec(ctx, conn, q.stmt, q.pageState)
 	return Result(res), err
 }
 
@@ -59,7 +78,7 @@ func (q *Query) AsyncExec(ctx context.Context) {
 
 	h := transport.MakeResponseHandler()
 	q.res = append(q.res, h)
-	q.asyncExec(ctx, conn, stmt, nil, h)
+	q.asyncExec(ctx, conn, stmt, q.pageState, h)
 }
 
 var ErrNoQueryResults = fmt.Errorf("no query results to be fetched")
@@ -82,7 +101,7 @@ func (q *Query) Fetch() (Result, error) {
 	return Result(res), err
 }
 
-// https://github.com/scylladb/scylla/blob/40adf38915b6d8f5314c621a94d694d172360833/compound_compat.hh#L33-L47
+// https://github.com/kulezi/scylla/blob/40adf38915b6d8f5314c621a94d694d172360833/compound_compat.hh#L33-L47
 func (q *Query) token() (transport.Token, bool) {
 	if q.stmt.PkCnt == 0 {
 		return 0, false
@@ -112,6 +131,65 @@ func (q *Query) info(token transport.Token, tokenAware bool) (transport.QueryInf
 	return q.session.cluster.NewQueryInfo(), nil
 }
 
+func (q *Query) checkBounds(pos int) error {
+	if q.stmt.Metadata != nil {
+		if pos < 0 || pos >= len(q.stmt.Values) {
+			return fmt.Errorf("no bind marker with position %d", pos)
+		}
+
+		return nil
+	}
+
+	for i := len(q.stmt.Values); i <= pos; i++ {
+		q.stmt.Values = append(q.stmt.Values, frame.Value{})
+	}
+	return nil
+}
+
+type Serializable interface {
+	Serialize(*frame.Option) (n int32, bytes []byte, err error)
+}
+
+// BindAny allows binding any value to the bind marker at given pos in query,
+// it shouldn't be used on non-prepared queries, as it will always result in query execution error later.
+func (q *Query) Bind(pos int, v Serializable) *Query {
+	if q.stmt.Metadata == nil {
+		q.err = append(q.err, fmt.Errorf("binding any to unprepared queries is not supported"))
+		return q
+	}
+	if err := q.checkBounds(pos); err != nil {
+		q.err = append(q.err, err)
+		return q
+	}
+	p := &q.stmt.Values[pos]
+
+	var err error
+	p.N, p.Bytes, err = v.Serialize(p.Type)
+	if err != nil {
+		q.err = append(q.err, err)
+	}
+	// var err error
+
+	// typ := q.stmt.Values[pos].Type
+	// if typ.ID == frame.ListID {
+	// 	typ := gocql.CollectionType{
+	// 		NativeType: gocql.NewNativeType(0x04, typ.Type(), ""),
+	// 		Elem:       &q.stmt.Values[pos].Type.List.Element,
+	// 	}
+	// 	q.stmt.Values[pos].Bytes, err = gocql.Marshal(typ, x)
+	// } else {
+	// 	q.stmt.Values[pos].Bytes, err = gocql.Marshal(q.stmt.Values[pos].Type, x)
+	// }
+
+	// if err != nil {
+	// 	q.err = append(q.err, err)
+	// 	return q
+	// }
+	// q.stmt.Values[pos].N = int32(len(q.stmt.Values[pos].Bytes))
+
+	return q
+}
+
 func (q *Query) BindInt64(pos int, v int64) *Query {
 	p := &q.stmt.Values[pos]
 	if p.N == 0 {
@@ -131,6 +209,22 @@ func (q *Query) BindInt64(pos int, v int64) *Query {
 	return q
 }
 
+func (q *Query) SetSerialConsistency(v frame.Consistency) {
+	q.stmt.SerialConsistency = v
+}
+
+func (q *Query) SerialConsistency(v frame.Consistency) frame.Consistency {
+	return q.stmt.SerialConsistency
+}
+
+func (q *Query) SetPageState(v []byte) {
+	q.pageState = v
+}
+
+func (q *Query) PageState() []byte {
+	return q.pageState
+}
+
 func (q *Query) SetPageSize(v int32) {
 	q.stmt.PageSize = v
 }
@@ -147,13 +241,28 @@ func (q *Query) Compression() bool {
 	return q.stmt.Compression
 }
 
+func (q *Query) NoSkipMetadata() *Query {
+	q.stmt.NoSkipMetadata = true
+	return q
+}
+
 type Result transport.QueryResult
 
 func (q *Query) Iter(ctx context.Context) Iter {
+	stmt := q.stmt.Clone()
+
+	var pageState []byte
+	if q.pageState != nil {
+		pageState := make([]byte, len(q.pageState))
+		copy(pageState, q.pageState)
+	}
+
 	it := Iter{
 		requestCh: make(chan struct{}, 1),
 		nextCh:    make(chan transport.QueryResult),
 		errCh:     make(chan error, 1),
+
+		meta: stmt.Metadata,
 	}
 
 	conn, err := q.pickConn()
@@ -163,12 +272,14 @@ func (q *Query) Iter(ctx context.Context) Iter {
 	}
 
 	worker := iterWorker{
-		stmt:      q.stmt.Clone(),
+		stmt:      stmt,
 		conn:      conn,
 		queryExec: q.exec,
 		requestCh: it.requestCh,
 		nextCh:    it.nextCh,
 		errCh:     it.errCh,
+
+		pagingState: pageState,
 	}
 
 	it.requestCh <- struct{}{}
@@ -185,6 +296,9 @@ type Iter struct {
 	nextCh    chan transport.QueryResult
 	errCh     chan error
 	closed    bool
+
+	meta *frame.ResultMetadata
+	err  error
 }
 
 var (
@@ -192,9 +306,29 @@ var (
 	ErrNoMoreRows = fmt.Errorf("no more rows left")
 )
 
+// func (it *Iter) Scan(dst ...interface{}) bool {
+// 	row, err := it.Next()
+// 	if err != nil {
+// 		return false
+// 	}
+
+// 	if it.meta == nil || len(it.meta.Columns) != len(row) {
+// 		it.err = fmt.Errorf("column count mismatch, expected %d, got %d", len(it.meta.Columns), len(row))
+// 	}
+
+// 	for i := range row {
+// 		if err := Unmarshal(&it.meta.Columns[i].Type, row[i].Value, dst[i]); err != nil {
+// 			it.err = err
+// 			return false
+// 		}
+// 	}
+
+// 	return true
+// }
+
 func (it *Iter) Next() (frame.Row, error) {
 	if it.closed {
-		return nil, ErrClosedIter
+		return nil, nil
 	}
 
 	if it.pos >= it.rowCnt {
@@ -202,8 +336,10 @@ func (it *Iter) Next() (frame.Row, error) {
 		case r := <-it.nextCh:
 			it.result = r
 		case err := <-it.errCh:
-			it.Close()
-			return nil, err
+			if !errors.Is(err, ErrNoMoreRows) {
+				it.err = err
+			}
+			return nil, it.Close()
 		}
 
 		it.pos = 0
@@ -221,12 +357,25 @@ func (it *Iter) Next() (frame.Row, error) {
 	return res, nil
 }
 
-func (it *Iter) Close() {
+func (it *Iter) Close() error {
 	if it.closed {
-		return
+		return it.err
 	}
 	it.closed = true
 	close(it.requestCh)
+	return it.err
+}
+
+func (it *Iter) Columns() []frame.ColumnSpec {
+	return it.meta.Columns
+}
+
+func (it *Iter) NumRows() int {
+	return it.rowCnt
+}
+
+func (it *Iter) PageState() []byte {
+	return it.result.PagingState
 }
 
 type iterWorker struct {

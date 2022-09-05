@@ -356,8 +356,8 @@ func (b *Buffer) ReadUDTOption() *UDTOption {
 	return &UDTOption{
 		Keyspace:   ks,
 		Name:       name,
-		fieldNames: fn,
-		fieldTypes: ft,
+		FieldNames: fn,
+		FieldTypes: ft,
 	}
 }
 
@@ -381,8 +381,8 @@ func (b *Buffer) ReadOption() Option {
 	switch id {
 	case CustomID:
 		return Option{
-			ID:     id,
-			Custom: b.ReadCustomOption(),
+			ID:           id,
+			CustomOption: b.ReadCustomOption(),
 		}
 	case ListID:
 		return Option{
@@ -411,7 +411,7 @@ func (b *Buffer) ReadOption() Option {
 		}
 	default:
 		if Debug {
-			if id < ASCIIID || TinyIntID < id {
+			if id < ASCIIID || DurationID < id {
 				log.Printf("unknown Option ID: %d", id)
 			}
 		}

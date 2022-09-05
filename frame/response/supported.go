@@ -4,7 +4,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 // Supported spec: https://github.com/apache/cassandra/blob/adcff3f630c0d07d1ba33bf23fcb11a6db1b9af1/doc/native_protocol_v4.spec#L537
@@ -19,7 +19,7 @@ func ParseSupported(b *frame.Buffer) *Supported {
 }
 
 // ScyllaSupported represents Scylla connection options as sent in SUPPORTED
-// https://github.com/scylladb/scylla/blob/4bfcead2ba60072c720241cce6f42f620930c380/docs/dev/protocol-extensions.md#intranode-sharding
+// https://github.com/kulezi/scylla/blob/4bfcead2ba60072c720241cce6f42f620930c380/docs/dev/protocol-extensions.md#intranode-sharding
 type ScyllaSupported struct {
 	Shard             uint16
 	NrShards          uint16

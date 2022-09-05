@@ -3,11 +3,10 @@ package scylla
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 
-	"github.com/scylladb/scylla-go-driver/frame"
-	"github.com/scylladb/scylla-go-driver/transport"
+	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 // TODO: Add retry policy.
@@ -71,6 +70,9 @@ type SessionConfig struct {
 	Policy transport.HostSelectionPolicy
 	transport.ConnConfig
 }
+
+type DefaultLogger = transport.DefaultLogger
+type DebugLogger = transport.DebugLogger
 
 func DefaultSessionConfig(keyspace string, hosts ...string) SessionConfig {
 	return SessionConfig{
@@ -150,7 +152,10 @@ func (s *Session) Query(content string) Query {
 
 func (s *Session) Prepare(ctx context.Context, content string) (Query, error) {
 	stmt := transport.Statement{Content: content, Consistency: frame.ALL}
+	return s.prepareStatement(ctx, stmt)
+}
 
+func (s *Session) prepareStatement(ctx context.Context, stmt transport.Statement) (Query, error) {
 	// Prepare on all nodes concurrently.
 	nodes := s.cluster.Topology().Nodes
 	resStmt := make([]transport.Statement, len(nodes))
@@ -193,6 +198,6 @@ func (s *Session) NewTokenAwareDCAwarePolicy(localDC string) transport.HostSelec
 }
 
 func (s *Session) Close() {
-	log.Println("session: close")
+	s.cfg.Logger.Println("session: close")
 	s.cluster.Close()
 }

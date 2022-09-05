@@ -1,7 +1,7 @@
 package request
 
 import (
-	"github.com/scylladb/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame"
 )
 
 var _ frame.Request = (*Startup)(nil)
