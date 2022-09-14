@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scylladb/scylla-go-driver/frame"
-	"github.com/scylladb/scylla-go-driver/frame/response"
-	"github.com/scylladb/scylla-go-driver/transport"
+	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/frame/response"
+	"github.com/kulezi/scylla-go-driver/transport"
 	"go.uber.org/goleak"
 )
 
