@@ -2,6 +2,7 @@ package gocql
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/kulezi/scylla-go-driver"
@@ -239,8 +240,15 @@ func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 	}
 
 	if cfg.Logger == nil {
-		scfg.Logger = stdLoggerWrapper{Logger}
+		if Logger == nil {
+			scfg.Logger = log.Default()
+		} else {
+			scfg.Logger = stdLoggerWrapper{Logger}
+		}
 	} else {
+		if cfg.Logger == nil {
+			cfg.Logger = log.Default()
+		}
 		scfg.Logger = stdLoggerWrapper{cfg.Logger}
 	}
 
