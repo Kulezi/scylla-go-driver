@@ -234,6 +234,10 @@ func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 		scfg.HostSelectionPolicy = policy
 	}
 
+	if retryPolicy, ok := cfg.RetryPolicy.(transport.RetryPolicy); ok {
+		scfg.RetryPolicy = retryPolicy
+	}
+
 	scfg.Logger = stdLoggerWrapper{cfg.Logger}
 	tlsConfig, err := setupTLSConfig(cfg.SslOpts)
 	if err != nil {
