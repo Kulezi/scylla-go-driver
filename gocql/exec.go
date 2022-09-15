@@ -69,22 +69,22 @@ func NewSingleHostQueryExecutor(cfg *ClusterConfig) (e SingleHostQueryExecutor, 
 }
 
 type singleHostIter struct {
-	conn        *transport.Conn
-	result      transport.QueryResult
-	pos         int
-	rowCnt      int
-	closed      bool
-	err         error
-	meta        frame.ResultMetadata
-	rd          transport.RetryDecider
-	stmt        transport.Statement
-	pagingState []byte
+	conn   *transport.Conn
+	result transport.QueryResult
+	pos    int
+	rowCnt int
+	closed bool
+	err    error
+	meta   frame.ResultMetadata
+	rd     transport.RetryDecider
+	stmt   transport.Statement
 }
 
 func newSingleHostIter(stmt transport.Statement, conn *transport.Conn) *singleHostIter {
 	return &singleHostIter{
 		conn: conn,
 		stmt: stmt,
+		rd:   &transport.DefaultRetryDecider{},
 	}
 }
 
