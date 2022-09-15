@@ -9,3 +9,5 @@ type StdLogger interface {
 type stdLoggerWrapper struct {
 	StdLogger
 }
+
+var Logger StdLogger
