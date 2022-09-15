@@ -80,7 +80,7 @@ func (e *SimpleConvictionPolicy) AddFailure(error error, host *HostInfo) bool {
 
 func (e *SimpleConvictionPolicy) Reset(host *HostInfo) {}
 
-type SerialConsistency interface{}
+type SerialConsistency = Consistency
 type QueryObserver interface{}
 type Tracer interface{}
 type Compressor interface{}
