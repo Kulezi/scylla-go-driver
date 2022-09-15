@@ -68,7 +68,7 @@ type ClusterConfig struct {
 
 	// ConvictionPolicy decides whether to mark host as down based on the error and host info.
 	// Default: SimpleConvictionPolicy
-	// ConvictionPolicy ConvictionPolicy
+	ConvictionPolicy ConvictionPolicy // TODO: use it?
 
 	// Default reconnection policy to use for reconnecting before trying to mark host as down.
 	// ReconnectionPolicy ReconnectionPolicy

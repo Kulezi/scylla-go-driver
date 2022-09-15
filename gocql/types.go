@@ -61,6 +61,25 @@ func DCAwareRoundRobinPolicy(localDC string) HostSelectionPolicy {
 
 type RetryPolicy interface{} // TODO: use retry policy
 type SpeculativeExecutionPolicy interface{}
+type ConvictionPolicy interface {
+	// Implementations should return `true` if the host should be convicted, `false` otherwise.
+	AddFailure(error error, host *HostInfo) bool
+	//Implementations should clear out any convictions or state regarding the host.
+	Reset(host *HostInfo)
+}
+type HostInfo interface{}
+
+// SimpleConvictionPolicy implements a ConvictionPolicy which convicts all hosts
+// regardless of error
+type SimpleConvictionPolicy struct {
+}
+
+func (e *SimpleConvictionPolicy) AddFailure(error error, host *HostInfo) bool {
+	return true
+}
+
+func (e *SimpleConvictionPolicy) Reset(host *HostInfo) {}
+
 type SerialConsistency interface{}
 type QueryObserver interface{}
 type Tracer interface{}
