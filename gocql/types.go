@@ -215,3 +215,5 @@ func setupTLSConfig(sslOpts *SslOptions) (*tls.Config, error) {
 
 	return tlsConfig, nil
 }
+
+var ErrNoHosts = errors.New("no hosts provided")

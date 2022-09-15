@@ -4,12 +4,19 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
 )
 
+type iterr interface {
+	Columns() []frame.ColumnSpec
+	NumRows() int
+	Close() error
+	Next() (frame.Row, error)
+	PageState() []byte
+}
+
 type Iter struct {
-	it  scylla.Iter
+	it  iterr
 	err error
 }
 
