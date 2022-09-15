@@ -3,7 +3,7 @@ module github.com/gocql/gocql
 go 1.18
 
 require (
-	github.com/kulezi/scylla-go-driver v0.1.5
+	github.com/kulezi/scylla-go-driver v0.1.6
 	gopkg.in/inf.v0 v0.9.1
 )
 

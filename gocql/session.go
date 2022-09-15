@@ -9,6 +9,7 @@ import (
 
 type Session struct {
 	session *scylla.Session
+	cfg     scylla.SessionConfig
 }
 
 func NewSession(cfg ClusterConfig) (*Session, error) {
@@ -18,7 +19,10 @@ func NewSession(cfg ClusterConfig) (*Session, error) {
 	}
 
 	session, err := scylla.NewSession(context.Background(), scfg)
-	return &Session{session}, err
+	return &Session{
+		session: session,
+		cfg:     scfg,
+	}, err
 }
 
 func (s *Session) Query(stmt string, values ...interface{}) *Query {

@@ -252,6 +252,9 @@ func (cfg *ClusterConfig) CreateSession() (*Session, error) {
 	}
 
 	session, err := scylla.NewSession(context.Background(), scfg)
-	ret := Session{session}
+	ret := Session{
+		session: session,
+		cfg:     scfg,
+	}
 	return &ret, err
 }
