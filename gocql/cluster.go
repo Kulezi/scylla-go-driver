@@ -243,12 +243,14 @@ func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 	} else {
 		scfg.Logger = stdLoggerWrapper{cfg.Logger}
 	}
-	tlsConfig, err := setupTLSConfig(cfg.SslOpts)
-	if err != nil {
-		return scylla.SessionConfig{}, err
-	}
 
-	scfg.TLSConfig = tlsConfig
+	if cfg.SslOpts != nil {
+		tlsConfig, err := setupTLSConfig(cfg.SslOpts)
+		if err != nil {
+			return scylla.SessionConfig{}, err
+		}
+		scfg.TLSConfig = tlsConfig
+	}
 
 	return scfg, nil
 }
