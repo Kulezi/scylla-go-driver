@@ -5,6 +5,7 @@ import (
 
 	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 type unsetColumn struct{}
@@ -32,6 +33,26 @@ type Duration struct {
 	Months      int32
 	Days        int32
 	Nanoseconds int64
+}
+
+type PoolConfig struct {
+	// HostSelectionPolicy sets the policy for selecting which host to use for a
+	// given query (default: RoundRobinHostPolicy())
+	HostSelectionPolicy HostSelectionPolicy
+}
+
+type HostSelectionPolicy interface{}
+
+func TokenAwareHostPolicy(hsp HostSelectionPolicy) HostSelectionPolicy {
+	return hsp
+}
+
+func RoundRobinHostPolicy() HostSelectionPolicy {
+	return transport.NewTokenAwarePolicy("")
+}
+
+func DCAwareRoundRobinPolicy(localDC string) HostSelectionPolicy {
+	return transport.NewTokenAwarePolicy(localDC)
 }
 
 type RetryPolicy interface{} // TODO: use retry policy
