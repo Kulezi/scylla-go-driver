@@ -33,8 +33,8 @@ func (s *Session) Close() {
 	s.session.Close()
 }
 
-func (s *Session) Closed() {
-
+func (s *Session) Closed() bool {
+	return s.session.Closed()
 }
 
 func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
