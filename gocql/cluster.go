@@ -179,7 +179,7 @@ type ClusterConfig struct {
 	// disable.
 	//
 	// (default: 200 microseconds)
-	// WriteCoalesceWaitTime time.Duration
+	WriteCoalesceWaitTime time.Duration
 
 	// Dialer will be used to establish all connections created for this Cluster.
 	// If not provided, a default dialer configured with ConnectTimeout will be used.
@@ -213,13 +213,14 @@ type ClusterConfig struct {
 }
 
 func NewCluster(hosts ...string) *ClusterConfig {
-	cfg := ClusterConfig{Hosts: hosts}
+	cfg := ClusterConfig{Hosts: hosts, WriteCoalesceWaitTime: 200 * time.Microsecond}
 	return &cfg
 }
 
 func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 	scfg := scylla.DefaultSessionConfig(cfg.Keyspace, cfg.Hosts...)
 	scfg.Hosts = cfg.Hosts
+	scfg.WriteCoalesceWaitTime = cfg.WriteCoalesceWaitTime
 	if _, ok := cfg.Compressor.(SnappyCompressor); ok {
 		scfg.Compression = scylla.Snappy
 	}
