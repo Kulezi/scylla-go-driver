@@ -205,7 +205,7 @@ type ClusterConfig struct {
 
 	// Logger for this ClusterConfig.
 	// If not specified, defaults to the global gocql.Logger.
-	// Logger StdLogger
+	Logger StdLogger
 
 	// internal config for testing
 	disableControlConn bool
@@ -232,6 +232,8 @@ func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
 	if policy, ok := cfg.PoolConfig.HostSelectionPolicy.(transport.HostSelectionPolicy); ok {
 		scfg.HostSelectionPolicy = policy
 	}
+
+	scfg.Logger = stdLoggerWrapper{cfg.Logger}
 
 	return scfg
 }
