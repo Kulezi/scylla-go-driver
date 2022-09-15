@@ -90,7 +90,7 @@ func newSingleHostIter(stmt transport.Statement, conn *transport.Conn) *singleHo
 
 func (it *singleHostIter) fetch() (transport.QueryResult, error) {
 	for {
-		res, err := it.conn.Execute(context.Background(), it.stmt, it.result.PagingState)
+		res, err := it.conn.Query(context.Background(), it.stmt, it.result.PagingState)
 		if err == nil {
 			return res, nil
 		} else if err != nil {
