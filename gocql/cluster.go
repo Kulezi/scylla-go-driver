@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kulezi/scylla-go-driver"
+	"github.com/kulezi/scylla-go-driver/transport"
 )
 
 type ClusterConfig struct {
@@ -102,7 +103,7 @@ type ClusterConfig struct {
 
 	// PoolConfig configures the underlying connection pool, allowing the
 	// configuration of host selection and connection selection policies.
-	// PoolConfig PoolConfig
+	PoolConfig PoolConfig
 
 	// If not zero, gocql attempt to reconnect known DOWN nodes in every ReconnectInterval.
 	// ReconnectInterval time.Duration
@@ -226,6 +227,10 @@ func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
 	if auth, ok := cfg.Authenticator.(PasswordAuthenticator); ok {
 		scfg.Username = auth.Username
 		scfg.Password = auth.Password
+	}
+
+	if policy, ok := cfg.PoolConfig.HostSelectionPolicy.(transport.HostSelectionPolicy); ok {
+		scfg.HostSelectionPolicy = policy
 	}
 
 	return scfg
