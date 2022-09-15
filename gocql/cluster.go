@@ -95,7 +95,7 @@ type ClusterConfig struct {
 
 	// SslOpts configures TLS use when HostDialer is not set.
 	// SslOpts is ignored if HostDialer is set.
-	// SslOpts *SslOptions
+	SslOpts *SslOptions
 
 	// Sends a client side timestamp for all requests which overrides the timestamp at which it arrives at the server.
 	// Default: true, only enabled for protocol 3 and above.
@@ -217,7 +217,7 @@ func NewCluster(hosts ...string) *ClusterConfig {
 	return &cfg
 }
 
-func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
+func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 	scfg := scylla.DefaultSessionConfig(cfg.Keyspace, cfg.Hosts...)
 	scfg.Hosts = cfg.Hosts
 	if _, ok := cfg.Compressor.(SnappyCompressor); ok {
@@ -234,12 +234,23 @@ func sessionConfigFromGocql(cfg *ClusterConfig) scylla.SessionConfig {
 	}
 
 	scfg.Logger = stdLoggerWrapper{cfg.Logger}
+	tlsConfig, err := setupTLSConfig(cfg.SslOpts)
+	if err != nil {
+		return scylla.SessionConfig{}, err
+	}
 
-	return scfg
+	scfg.TLSConfig = tlsConfig
+
+	return scfg, nil
 }
 
 func (cfg *ClusterConfig) CreateSession() (*Session, error) {
-	session, err := scylla.NewSession(context.Background(), sessionConfigFromGocql(cfg))
+	scfg, err := sessionConfigFromGocql(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := scylla.NewSession(context.Background(), scfg)
 	ret := Session{session}
 	return &ret, err
 }

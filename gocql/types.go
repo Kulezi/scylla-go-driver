@@ -1,7 +1,11 @@
 package gocql
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"fmt"
+	"io/ioutil"
 
 	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -143,4 +147,71 @@ type Authenticator interface{}
 
 type PasswordAuthenticator struct {
 	Username, Password string
+}
+
+type SslOptions struct {
+	*tls.Config
+
+	// CertPath and KeyPath are optional depending on server
+	// config, but both fields must be omitted to avoid using a
+	// client certificate
+	CertPath string
+	KeyPath  string
+	CaPath   string //optional depending on server config
+	// If you want to verify the hostname and server cert (like a wildcard for cass cluster) then you should turn this
+	// on.
+	// This option is basically the inverse of tls.Config.InsecureSkipVerify.
+	// See InsecureSkipVerify in http://golang.org/pkg/crypto/tls/ for more info.
+	//
+	// See SslOptions documentation to see how EnableHostVerification interacts with the provided tls.Config.
+	EnableHostVerification bool
+}
+
+func setupTLSConfig(sslOpts *SslOptions) (*tls.Config, error) {
+	//  Config.InsecureSkipVerify | EnableHostVerification | Result
+	//  Config is nil             | true                   | verify host
+	//  Config is nil             | false                  | do not verify host
+	//  false                     | false                  | verify host
+	//  true                      | false                  | do not verify host
+	//  false                     | true                   | verify host
+	//  true                      | true                   | verify host
+	var tlsConfig *tls.Config
+	if sslOpts.Config == nil {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: !sslOpts.EnableHostVerification,
+		}
+	} else {
+		// use clone to avoid race.
+		tlsConfig = sslOpts.Config.Clone()
+	}
+
+	if tlsConfig.InsecureSkipVerify && sslOpts.EnableHostVerification {
+		tlsConfig.InsecureSkipVerify = false
+	}
+
+	// ca cert is optional
+	if sslOpts.CaPath != "" {
+		if tlsConfig.RootCAs == nil {
+			tlsConfig.RootCAs = x509.NewCertPool()
+		}
+
+		pem, err := ioutil.ReadFile(sslOpts.CaPath)
+		if err != nil {
+			return nil, fmt.Errorf("connectionpool: unable to open CA certs: %v", err)
+		}
+
+		if !tlsConfig.RootCAs.AppendCertsFromPEM(pem) {
+			return nil, errors.New("connectionpool: failed parsing or CA certs")
+		}
+	}
+
+	if sslOpts.CertPath != "" || sslOpts.KeyPath != "" {
+		mycert, err := tls.LoadX509KeyPair(sslOpts.CertPath, sslOpts.KeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("connectionpool: unable to load X509 key pair: %v", err)
+		}
+		tlsConfig.Certificates = append(tlsConfig.Certificates, mycert)
+	}
+
+	return tlsConfig, nil
 }
