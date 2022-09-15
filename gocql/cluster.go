@@ -106,7 +106,7 @@ type ClusterConfig struct {
 	PoolConfig PoolConfig
 
 	// If not zero, gocql attempt to reconnect known DOWN nodes in every ReconnectInterval.
-	// ReconnectInterval time.Duration
+	ReconnectInterval time.Duration // FIXME: unused
 
 	// The maximum amount of time to wait for schema agreement in a cluster after
 	// receiving a schema change frame. (default: 60s)
