@@ -279,3 +279,7 @@ func (s *Session) Close() {
 	s.cfg.Logger.Println("session: close")
 	s.cluster.Close()
 }
+
+func (s *Session) Closed() bool {
+	return s.cluster.Closed()
+}

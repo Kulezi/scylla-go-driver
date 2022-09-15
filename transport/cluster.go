@@ -33,6 +33,7 @@ type Cluster struct {
 	refreshChan       requestChan
 	reopenControlChan requestChan
 	closeChan         requestChan
+	closed            atomic.Bool
 
 	queryInfoCounter atomic.Uint64
 }
@@ -566,11 +567,19 @@ func (c *Cluster) RequestReopenControl() {
 }
 
 func (c *Cluster) Close() {
+	if c.closed.Swap(true) {
+		return
+	}
+
 	c.cfg.Logger.Printf("cluster: requested to close cluster")
 	select {
 	case c.closeChan <- struct{}{}:
 	default:
 	}
+}
+
+func (c *Cluster) Closed() bool {
+	return c.closed.Load()
 }
 
 func drainChan(c requestChan) {
