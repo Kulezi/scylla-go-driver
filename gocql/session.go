@@ -12,7 +12,12 @@ type Session struct {
 }
 
 func NewSession(cfg ClusterConfig) (*Session, error) {
-	session, err := scylla.NewSession(context.Background(), sessionConfigFromGocql(&cfg))
+	scfg, err := sessionConfigFromGocql(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := scylla.NewSession(context.Background(), scfg)
 	return &Session{session}, err
 }
 
@@ -26,6 +31,10 @@ func (s *Session) Query(stmt string, values ...interface{}) *Query {
 
 func (s *Session) Close() {
 	s.session.Close()
+}
+
+func (s *Session) Closed() {
+
 }
 
 func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
