@@ -72,7 +72,8 @@ type connWriter struct {
 	// For use only when skipping sending a request.
 	freeStream func(frame.StreamID)
 
-	logger Logger
+	writeCoalesceWaitTime time.Duration
+	logger                Logger
 }
 
 func (c *connWriter) submit(r request) {
@@ -86,7 +87,7 @@ func (c *connWriter) loop(ctx context.Context) {
 		// If there are no requests backoff.
 		// Through experimentation, we know that, sleeping more than 1ms makes no difference or is counterproductive.
 		if size == 0 {
-			time.Sleep(time.Millisecond)
+			time.Sleep(c.writeCoalesceWaitTime)
 			size = len(c.requestCh)
 		}
 		if size == 0 {
@@ -352,20 +353,23 @@ type ConnConfig struct {
 
 	ConnObserver ConnObserver
 	Logger       Logger
+
+	WriteCoalesceWaitTime time.Duration
 }
 
 func DefaultConnConfig(keyspace string) ConnConfig {
 	return ConnConfig{
-		Username:           "cassandra",
-		Password:           "cassandra",
-		Keyspace:           keyspace,
-		TCPNoDelay:         true,
-		Timeout:            500 * time.Millisecond,
-		DefaultConsistency: frame.LOCALQUORUM,
-		DefaultPort:        "9042",
-		ComprBufferSize:    comprBufferSize,
-		ConnObserver:       LoggingConnObserver{logger: DefaultLogger{}},
-		Logger:             DefaultLogger{},
+		Username:              "cassandra",
+		Password:              "cassandra",
+		Keyspace:              keyspace,
+		TCPNoDelay:            true,
+		Timeout:               500 * time.Millisecond,
+		DefaultConsistency:    frame.LOCALQUORUM,
+		DefaultPort:           "9042",
+		ComprBufferSize:       comprBufferSize,
+		ConnObserver:          LoggingConnObserver{logger: DefaultLogger{}},
+		Logger:                DefaultLogger{},
+		WriteCoalesceWaitTime: time.Second,
 	}
 }
 
@@ -474,7 +478,8 @@ func WrapConn(ctx context.Context, conn net.Conn, cfg ConnConfig) (*Conn, error)
 			connString: c.String,
 			connClose:  c.Close,
 
-			logger: cfg.Logger,
+			writeCoalesceWaitTime: cfg.WriteCoalesceWaitTime,
+			logger:                cfg.Logger,
 		},
 		r: connReader{
 			conn: io.LimitedReader{
