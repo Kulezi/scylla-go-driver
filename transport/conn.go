@@ -513,6 +513,7 @@ func WrapConn(ctx context.Context, conn net.Conn, cfg ConnConfig) (*Conn, error)
 	go c.r.loop(ctx)
 
 	if err := c.init(ctx); err != nil {
+		c.Close()
 		return c, err
 	}
 
