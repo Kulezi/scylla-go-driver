@@ -2,6 +2,7 @@ package gocql
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kulezi/scylla-go-driver"
@@ -10,6 +11,11 @@ import (
 type Session struct {
 	session *scylla.Session
 	cfg     scylla.SessionConfig
+	control SingleHostQueryExecutor
+
+	useSystemSchema           bool
+	hasAggregatesAndFunctions bool
+	schemaDescriber           *schemaDescriber
 }
 
 func NewSession(cfg ClusterConfig) (*Session, error) {
@@ -19,10 +25,16 @@ func NewSession(cfg ClusterConfig) (*Session, error) {
 	}
 
 	session, err := scylla.NewSession(context.Background(), scfg)
-	return &Session{
+	if err != nil {
+		return nil, err
+	}
+	s := &Session{
 		session: session,
 		cfg:     scfg,
-	}, err
+	}
+
+	s.schemaDescriber = newSchemaDescriber(s)
+	return s, nil
 }
 
 func (s *Session) Query(stmt string, values ...interface{}) *Query {
@@ -45,4 +57,21 @@ func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
 	// TODO: wait for actual schema agreement.
 	time.Sleep(time.Second)
 	return nil
+}
+
+var (
+	ErrSessionClosed = errors.New("session closed")
+	ErrNoKeyspace    = errors.New("no keyspace")
+)
+
+// KeyspaceMetadata returns the schema metadata for the keyspace specified. Returns an error if the keyspace does not exist.
+func (s *Session) KeyspaceMetadata(keyspace string) (*KeyspaceMetadata, error) {
+	// fail fast
+	if s.Closed() {
+		return nil, ErrSessionClosed
+	} else if keyspace == "" {
+		return nil, ErrNoKeyspace
+	}
+
+	return s.schemaDescriber.getSchema(keyspace)
 }

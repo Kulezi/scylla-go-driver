@@ -164,6 +164,8 @@ type SnappyCompressor struct{}
 
 type Authenticator interface{}
 
+var ErrKeyspaceDoesNotExist = errors.New("keyspace doesn't exist")
+
 type PasswordAuthenticator struct {
 	Username, Password string
 }
