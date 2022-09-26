@@ -3,6 +3,7 @@ package gocql
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/kulezi/scylla-go-driver"
 	"github.com/kulezi/scylla-go-driver/frame"
@@ -20,10 +21,35 @@ type SingleHostQueryExecutor struct {
 	conn *transport.Conn
 }
 
+func bind(stmt *transport.Statement, values ...interface{}) error {
+	if len(stmt.Values) != len(values) {
+		return fmt.Errorf("expected %d columns, got %d", len(stmt.Values), len(values))
+	}
+
+	for i := range values {
+		v := anyWrapper{values[i]}
+		var err error
+		stmt.Values[i].N, stmt.Values[i].Bytes, err = v.Serialize(stmt.Values[i].Type)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Exec executes the query without returning any rows.
 func (e SingleHostQueryExecutor) Exec(stmt string, values ...interface{}) error {
 	qStmt := transport.Statement{Content: stmt, Consistency: frame.ONE}
-	_, err := e.conn.Query(context.Background(), qStmt, nil)
+	qStmt, err := e.conn.Prepare(context.Background(), qStmt)
+	if err != nil {
+		return err
+	}
+
+	if err := bind(&qStmt, values); err != nil {
+		return err
+	}
+	_, err = e.conn.Query(context.Background(), qStmt, nil)
 	return err
 }
 
@@ -31,7 +57,13 @@ func (e SingleHostQueryExecutor) Exec(stmt string, values ...interface{}) error 
 // over all results.
 func (e SingleHostQueryExecutor) Iter(stmt string, values ...interface{}) *Iter {
 	qStmt := transport.Statement{Content: stmt, Consistency: frame.ONE}
-	return newIter(newSingleHostIter(qStmt, e.conn))
+	qStmt, err := e.conn.Prepare(context.Background(), qStmt)
+	if err == nil {
+		err = bind(&qStmt, values)
+	}
+	it := newIter(newSingleHostIter(qStmt, e.conn))
+	it.err = err
+	return it
 }
 
 func (e SingleHostQueryExecutor) Close() {
