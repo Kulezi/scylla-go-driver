@@ -91,9 +91,11 @@ func NewSingleHostQueryExecutor(cfg *ClusterConfig) (e SingleHostQueryExecutor, 
 	var control *transport.Conn
 	control, err = transport.OpenConn(context.Background(), host, nil, scfg.ConnConfig)
 	if err != nil {
+		if control != nil {
+			control.Close()
+		}
 		return
 	}
-
 	e = SingleHostQueryExecutor{control}
 	return
 }
