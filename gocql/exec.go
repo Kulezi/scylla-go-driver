@@ -46,7 +46,7 @@ func (e SingleHostQueryExecutor) Exec(stmt string, values ...interface{}) error 
 		return err
 	}
 
-	if err := bind(&qStmt, values); err != nil {
+	if err := bind(&qStmt, values...); err != nil {
 		return err
 	}
 	_, err = e.conn.Query(context.Background(), qStmt, nil)
@@ -59,7 +59,7 @@ func (e SingleHostQueryExecutor) Iter(stmt string, values ...interface{}) *Iter 
 	qStmt := transport.Statement{Content: stmt, Consistency: frame.ONE}
 	qStmt, err := e.conn.Prepare(context.Background(), qStmt)
 	if err == nil {
-		err = bind(&qStmt, values)
+		err = bind(&qStmt, values...)
 	}
 	it := newIter(newSingleHostIter(qStmt, e.conn))
 	it.err = err
