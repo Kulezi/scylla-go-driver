@@ -9,13 +9,10 @@ import (
 )
 
 type Session struct {
-	session *scylla.Session
-	cfg     scylla.SessionConfig
-	control SingleHostQueryExecutor
-
-	useSystemSchema           bool
-	hasAggregatesAndFunctions bool
-	schemaDescriber           *schemaDescriber
+	session         *scylla.Session
+	cfg             scylla.SessionConfig
+	control         SingleHostQueryExecutor
+	schemaDescriber *schemaDescriber
 }
 
 func NewSession(cfg ClusterConfig) (*Session, error) {
