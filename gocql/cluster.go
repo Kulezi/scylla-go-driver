@@ -274,5 +274,6 @@ func (cfg *ClusterConfig) CreateSession() (*Session, error) {
 		session: session,
 		cfg:     scfg,
 	}
+	ret.schemaDescriber = newSchemaDescriber(&ret)
 	return &ret, err
 }
