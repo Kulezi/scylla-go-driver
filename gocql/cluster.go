@@ -1,7 +1,6 @@
 package gocql
 
 import (
-	"context"
 	"log"
 	"time"
 
@@ -264,16 +263,5 @@ func sessionConfigFromGocql(cfg *ClusterConfig) (scylla.SessionConfig, error) {
 }
 
 func (cfg *ClusterConfig) CreateSession() (*Session, error) {
-	scfg, err := sessionConfigFromGocql(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	session, err := scylla.NewSession(context.Background(), scfg)
-	ret := Session{
-		session: session,
-		cfg:     scfg,
-	}
-	ret.schemaDescriber = newSchemaDescriber(&ret)
-	return &ret, err
+	return NewSession(*cfg)
 }

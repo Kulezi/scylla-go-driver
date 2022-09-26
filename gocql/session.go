@@ -30,6 +30,10 @@ func NewSession(cfg ClusterConfig) (*Session, error) {
 		cfg:     scfg,
 	}
 
+	s.control, err = NewSingleHostQueryExecutor(&cfg)
+	if err != nil {
+		return nil, err
+	}
 	s.schemaDescriber = newSchemaDescriber(s)
 	return s, nil
 }
