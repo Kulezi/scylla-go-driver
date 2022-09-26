@@ -21,9 +21,9 @@ type SingleHostQueryExecutor struct {
 	conn *transport.Conn
 }
 
-func bind(stmt *transport.Statement, values ...interface{}) error {
+func bind(stmt *transport.Statement, values []interface{}) error {
 	if len(stmt.Values) != len(values) {
-		return fmt.Errorf("expected %d columns, got %d", len(stmt.Values), len(values))
+		return fmt.Errorf("bind: expected %d columns, got %d", len(stmt.Values), len(values))
 	}
 
 	for i := range values {
@@ -46,7 +46,7 @@ func (e SingleHostQueryExecutor) Exec(stmt string, values ...interface{}) error 
 		return err
 	}
 
-	if err := bind(&qStmt, values...); err != nil {
+	if err := bind(&qStmt, values); err != nil {
 		return err
 	}
 	_, err = e.conn.Query(context.Background(), qStmt, nil)
@@ -59,7 +59,7 @@ func (e SingleHostQueryExecutor) Iter(stmt string, values ...interface{}) *Iter 
 	qStmt := transport.Statement{Content: stmt, Consistency: frame.ONE}
 	qStmt, err := e.conn.Prepare(context.Background(), qStmt)
 	if err == nil {
-		err = bind(&qStmt, values...)
+		err = bind(&qStmt, values)
 	}
 	it := newIter(newSingleHostIter(qStmt, e.conn))
 	it.err = err
@@ -105,16 +105,16 @@ type singleHostIter struct {
 	rowCnt int
 	closed bool
 	err    error
-	meta   frame.ResultMetadata
 	rd     transport.RetryDecider
 	stmt   transport.Statement
 }
 
 func newSingleHostIter(stmt transport.Statement, conn *transport.Conn) *singleHostIter {
 	return &singleHostIter{
-		conn: conn,
-		stmt: stmt,
-		rd:   &transport.DefaultRetryDecider{},
+		conn:   conn,
+		stmt:   stmt,
+		rd:     &transport.DefaultRetryDecider{},
+		result: transport.QueryResult{HasMorePages: true},
 	}
 }
 
@@ -177,7 +177,7 @@ func (it *singleHostIter) Close() error {
 }
 
 func (it *singleHostIter) Columns() []frame.ColumnSpec {
-	return it.meta.Columns
+	return it.stmt.Metadata.Columns
 }
 
 func (it *singleHostIter) NumRows() int {
