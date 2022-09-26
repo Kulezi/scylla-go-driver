@@ -441,9 +441,6 @@ func componentColumnCountOfType(columns map[string]*ColumnMetadata, kind ColumnK
 
 // query for keyspace metadata in the system_schema.keyspaces
 func getKeyspaceMetadata(session *Session, keyspaceName string) (*KeyspaceMetadata, error) {
-	if !session.useSystemSchema {
-		return nil, ErrKeyspaceDoesNotExist
-	}
 	keyspace := &KeyspaceMetadata{Name: keyspaceName}
 
 	const stmt = `
@@ -476,10 +473,6 @@ func getKeyspaceMetadata(session *Session, keyspaceName string) (*KeyspaceMetada
 
 // query for table metadata in the system_schema.tables and system_schema.scylla_tables
 func getTableMetadata(session *Session, keyspaceName string) ([]TableMetadata, error) {
-	if !session.useSystemSchema {
-		return nil, nil
-	}
-
 	stmt := `SELECT * FROM system_schema.tables WHERE keyspace_name = ?`
 	iter := session.control.Iter(stmt, keyspaceName)
 
@@ -567,10 +560,6 @@ func getColumnMetadata(session *Session, keyspaceName string) ([]ColumnMetadata,
 
 // query for type metadata in the system_schema.types
 func getTypeMetadata(session *Session, keyspaceName string) ([]TypeMetadata, error) {
-	if !session.useSystemSchema {
-		return nil, nil
-	}
-
 	stmt := `SELECT * FROM system_schema.types WHERE keyspace_name = ?`
 	iter := session.control.Iter(stmt, keyspaceName)
 
@@ -595,9 +584,6 @@ func getTypeMetadata(session *Session, keyspaceName string) ([]TypeMetadata, err
 
 // query for function metadata in the system_schema.functions
 func getFunctionsMetadata(session *Session, keyspaceName string) ([]FunctionMetadata, error) {
-	if !session.hasAggregatesAndFunctions || !session.useSystemSchema {
-		return nil, nil
-	}
 	stmt := `SELECT * FROM system_schema.functions WHERE keyspace_name = ?`
 
 	var functions []FunctionMetadata
@@ -626,10 +612,6 @@ func getFunctionsMetadata(session *Session, keyspaceName string) ([]FunctionMeta
 
 // query for aggregate metadata in the system_schema.aggregates
 func getAggregatesMetadata(session *Session, keyspaceName string) ([]AggregateMetadata, error) {
-	if !session.hasAggregatesAndFunctions || !session.useSystemSchema {
-		return nil, nil
-	}
-
 	const stmt = `SELECT * FROM system_schema.aggregates WHERE keyspace_name = ?`
 
 	var aggregates []AggregateMetadata
@@ -658,10 +640,6 @@ func getAggregatesMetadata(session *Session, keyspaceName string) ([]AggregateMe
 
 // query for index metadata in the system_schema.indexes
 func getIndexMetadata(session *Session, keyspaceName string) ([]IndexMetadata, error) {
-	if !session.useSystemSchema {
-		return nil, nil
-	}
-
 	const stmt = `SELECT * FROM system_schema.indexes WHERE keyspace_name = ?`
 
 	var indexes []IndexMetadata
@@ -688,10 +666,6 @@ func getIndexMetadata(session *Session, keyspaceName string) ([]IndexMetadata, e
 
 // query for view metadata in the system_schema.views
 func getViewMetadata(session *Session, keyspaceName string) ([]ViewMetadata, error) {
-	if !session.useSystemSchema {
-		return nil, nil
-	}
-
 	stmt := `SELECT * FROM system_schema.views WHERE keyspace_name = ?`
 
 	iter := session.control.Iter(stmt, keyspaceName)
