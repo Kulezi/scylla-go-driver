@@ -48,6 +48,7 @@ func (s *Session) Query(stmt string, values ...interface{}) *Query {
 
 func (s *Session) Close() {
 	s.session.Close()
+	s.control.Close()
 }
 
 func (s *Session) Closed() bool {
@@ -55,8 +56,7 @@ func (s *Session) Closed() bool {
 }
 
 func (s *Session) AwaitSchemaAgreement(ctx context.Context) error {
-	// TODO: wait for actual schema agreement.
-	time.Sleep(time.Second)
+	s.session.AwaitSchemaAgreement(context.Background(), time.Minute)
 	return nil
 }
 
