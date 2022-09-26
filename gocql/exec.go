@@ -119,6 +119,9 @@ func newSingleHostIter(stmt transport.Statement, conn *transport.Conn) *singleHo
 }
 
 func (it *singleHostIter) fetch() (transport.QueryResult, error) {
+	if !it.result.HasMorePages {
+		return transport.QueryResult{}, scylla.ErrNoMoreRows
+	}
 	for {
 		res, err := it.conn.Query(context.Background(), it.stmt, it.result.PagingState)
 		if err == nil {
