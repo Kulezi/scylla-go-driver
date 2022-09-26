@@ -93,7 +93,7 @@ func (q *Query) Iter() *Iter {
 		return &Iter{it: &scylla.Iter{}, err: q.err}
 	}
 	it := q.query.Iter(q.ctx)
-	return &Iter{it: &it}
+	return newIter(&it)
 }
 
 func (q *Query) Release() {

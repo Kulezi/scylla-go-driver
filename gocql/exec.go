@@ -31,9 +31,7 @@ func (e SingleHostQueryExecutor) Exec(stmt string, values ...interface{}) error 
 // over all results.
 func (e SingleHostQueryExecutor) Iter(stmt string, values ...interface{}) *Iter {
 	qStmt := transport.Statement{Content: stmt, Consistency: frame.ONE}
-	return &Iter{
-		it: newSingleHostIter(qStmt, e.conn),
-	}
+	return newIter(newSingleHostIter(qStmt, e.conn))
 }
 
 func (e SingleHostQueryExecutor) Close() {

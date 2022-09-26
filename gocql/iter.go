@@ -18,6 +18,15 @@ type iterr interface {
 type Iter struct {
 	it  iterr
 	err error
+	row frame.Row
+	// First Next call should be done on iter creation, rest on Scan
+	dontSkipNext bool
+}
+
+func newIter(it iterr) *Iter {
+	ret := &Iter{it: it}
+	ret.row, ret.err = it.Next()
+	return ret
 }
 
 func (it *Iter) Columns() []ColumnInfo {
@@ -56,18 +65,21 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 		return false
 	}
 
-	var r frame.Row
-	r, it.err = it.it.Next()
+	if it.dontSkipNext {
+		it.row, it.err = it.it.Next()
+	} else {
+		it.dontSkipNext = true
+	}
 	if it.err != nil {
 		return false
 	}
 
-	if len(r) == 0 {
+	if len(it.row) == 0 {
 		return false
 	}
 
-	if len(dest) != len(r) {
-		it.err = fmt.Errorf("expected %d columns, got %d", len(dest), len(r))
+	if len(dest) != len(it.row) {
+		it.err = fmt.Errorf("expected %d columns, got %d", len(dest), len(it.row))
 		return false
 	}
 
@@ -75,7 +87,7 @@ func (it *Iter) Scan(dest ...interface{}) bool {
 		if dest[i] == nil {
 			continue
 		}
-		it.err = Unmarshal(WrapOption(r[i].Type), r[i].Value, dest[i])
+		it.err = Unmarshal(WrapOption(it.row[i].Type), it.row[i].Value, dest[i])
 		if it.err != nil {
 			return false
 		}
